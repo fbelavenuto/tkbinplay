@@ -1,8 +1,11 @@
-/*
- * wav.cpp
+/* tkbinplay - Carga rapida para micros TKs
  *
- *  Created on: 17/04/2012
- *      Author: Fabio
+ * Copyright 2014-2020 Fábio Belavenuto
+ *
+ * Este arquivo é distribuido pela Licença Pública Geral GNU.
+ * Veja o arquivo "LICENSE" distribuido com este software.
+ *
+ * ESTE SOFTWARE NÃO OFERECE NENHUMA GARANTIA
  */
 
 #include <stdlib.h>
@@ -169,10 +172,10 @@ int criaWav(char *arq) {
 
 	memset(&waveCab, 0, sizeof(TWaveCab));
 
-	strncpy((char *)waveCab.groupID,  "RIFF", 4);
+	memcpy((char *)waveCab.groupID,  "RIFF", 4);
 	waveCab.groupLength    = 0;					// Não fornecido agora
-	strncpy((char *)waveCab.typeID,   "WAVE", 4);
-	strncpy((char *)waveCab.formatID, "fmt ", 4);
+	memcpy((char *)waveCab.typeID,   "WAVE", 4);
+	memcpy((char *)waveCab.formatID, "fmt ", 4);
 	waveCab.formatLength   = 16;
 	waveCab.wFormatTag     = WAVE_FORMAT_PCM;
 	waveCab.numChannels    = 1;
@@ -180,7 +183,7 @@ int criaWav(char *arq) {
 	waveCab.bytesPerSec    = taxaAmostragem * 1 * (bits / 8);
 	waveCab.nBlockAlign    = 1 * (bits / 8);
 	waveCab.bitsPerSample  = bits;
-	strncpy((char *)waveCab.dataID,   "data", 4);
+	memcpy((char *)waveCab.dataID,   "data", 4);
 	waveCab.dataLength     = 0;					// Não fornecido agora
 	s = fwrite(&waveCab, 1, sizeof(TWaveCab), fileWav);
 	if (s != sizeof(TWaveCab))

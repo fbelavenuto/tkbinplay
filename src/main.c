@@ -1,3 +1,12 @@
+/* tkbinplay - Carga rapida para micros TKs
+ *
+ * Copyright 2014-2020 Fábio Belavenuto
+ *
+ * Este arquivo é distribuido pela Licença Pública Geral GNU.
+ * Veja o arquivo "LICENSE" distribuido com este software.
+ *
+ * ESTE SOFTWARE NÃO OFERECE NENHUMA GARANTIA
+ */
 
 #include <stdlib.h>
 #include <stdio.h>

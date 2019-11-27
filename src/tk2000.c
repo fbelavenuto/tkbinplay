@@ -1,8 +1,11 @@
-/*
- * tk2000.cpp
+/* tkbinplay - Carga rapida para micros TKs
  *
- *  Created on: 24/04/2012
- *      Author: fabio
+ * Copyright 2014-2020 Fábio Belavenuto
+ *
+ * Este arquivo é distribuido pela Licença Pública Geral GNU.
+ * Veja o arquivo "LICENSE" distribuido com este software.
+ *
+ * ESTE SOFTWARE NÃO OFERECE NENHUMA GARANTIA
  */
 
 #define DEBUG 0

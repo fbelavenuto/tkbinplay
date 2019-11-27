@@ -1,3 +1,12 @@
+/* tkbinplay - Carga rapida para micros TKs
+ *
+ * Copyright 2014-2020 Fábio Belavenuto
+ *
+ * Este arquivo é distribuido pela Licença Pública Geral GNU.
+ * Veja o arquivo "LICENSE" distribuido com este software.
+ *
+ * ESTE SOFTWARE NÃO OFERECE NENHUMA GARANTIA
+ */
 /* inih -- simple .INI file parser
 
 inih is released under the New BSD license (see LICENSE.txt). Go to the project
