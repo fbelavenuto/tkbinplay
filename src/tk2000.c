@@ -36,7 +36,7 @@
 //const int tk2000_crfreq[4] = { 4410, 4410, 4410, 4410 };		// 21-22	21-22
 //const int tk2000_crfreq[4] = { 4200, 4200, 4200, 4200 };		// 21-22	21-22
 
-unsigned int samplesPerBit = 4;
+//unsigned int samplesPerBit = 4;
 int tk2000_crfreq[5] = { 11025, 7350, 5512, 4410, 3675 };	// spb=4 sr=44100
 int tk2000_crXval[5] = { 5, 10, 15, 20, 26 };				// spb=4 sr=44100
 
@@ -48,7 +48,7 @@ void tk2000_samplesPerBit(int sampleRate, unsigned int spb) {
 	int i, x = spb;
 	double f;
 
-	samplesPerBit = spb;
+//	samplesPerBit = spb;
 	for (i = 0; i < 5; i++) {
 		tk2000_crfreq[i] = sampleRate / x;
 		x += 2;

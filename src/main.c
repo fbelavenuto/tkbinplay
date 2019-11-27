@@ -175,7 +175,7 @@ int main (int argc, char **argv)
 	int				inverse = 0, verbose = 0;
 	enum TipoOnda	formaOnda = TO_SENOIDAL;
 	unsigned int	taxaAmostragem = 44100;
-	unsigned int    samplesBit = 4;
+	unsigned int    samplesPerBit = 4;
 	unsigned int    bits = 16;
 	double			volume = 1.0;
 	char 			*outputfile = NULL;
@@ -216,8 +216,8 @@ int main (int argc, char **argv)
 				break;
 
 			case 'p':
-				samplesBit = atoi(optarg);
-				if (samplesBit != 3 && samplesBit != 4) {
+				samplesPerBit = atoi(optarg);
+				if (samplesPerBit != 3 && samplesPerBit != 4) {
 					usage();
 					return 1;
 				}
@@ -272,7 +272,7 @@ int main (int argc, char **argv)
 		fprintf(stderr, "Making wave. Configs:\n");
 		fprintf(stderr, "Rate = %d, Bits: %d, Inverse: %d, Wave format: %s, Volume: %.02f\n", taxaAmostragem, bits, inverse, ondas[formaOnda], volume);
 	}
-	tk2000_samplesPerBit(taxaAmostragem, samplesBit);
+	tk2000_samplesPerBit(taxaAmostragem, samplesPerBit);
 	wavConfig(formaOnda, taxaAmostragem, bits, volume, inverse);
 
 	if (criaWav(outputfile)) {
