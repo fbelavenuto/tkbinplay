@@ -17,8 +17,8 @@ IDIR = inc
 ALDIR = a2lib
 AIDIR = a2lib/inc
 
-CFLAGS=-g -Wall -I$(IDIR)
-LDFLAGS=
+CFLAGS = -g -Wall -I$(IDIR)
+LDFLAGS = -lm
 ACFLAGS  = -t $(SYS) -O -I$(AIDIR)
 AAFLAGS  = -t $(SYS) -l $(ODIR)/$(*).lst -I$(AIDIR)
 ALDFLAGS = -C $(ALDIR)/_config
