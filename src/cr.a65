@@ -1,0 +1,146 @@
+
+	.include "sys.def"
+	.include "hw.def"
+
+; Relembrando, CPX #valor:
+; Se X for <  valor, C=0
+; Se X for >= valor, C=1
+; Se valor <= X, C=1
+; Se valor >  X, C=0
+;
+
+DADO		:= $F0
+CHECKSUM	:= $F1
+
+;TAPEIN		:= $C060
+TAPEIN		:= $C010
+
+
+	.org	$300
+
+	jmp	carga_bloco
+inicio:
+	sta	@bufptr+1				; A e Y contém endereço do buffer de destino
+	sty	@bufptr+2
+	ldy	#0					; Usamos Y para controlar a posição atual do buffer
+	sty	CHECKSUM				; Zeramos checksum
+
+@piloto_inicio:
+	lda	#$FF					; 2	Usado para receber bits conforme pulsos do piloto são válidos
+@piloto:
+	ldx	#0					; 2	Contador do pulso piloto
+:
+	inx						; 2	Semiciclo positivo
+	bit	TAPEIN					; 4
+	bpl	:-					; 2+
+:
+	inx						; 2	Semiciclo negativo
+	bit	TAPEIN					; 4
+	bmi	:-					; 2+
+
+	cpx	#22					; 2	Compara com 22, maior que isso é erro (menor faz C=0)
+	rol	a					; 2	Joga carry no ACC
+	cpx	#16					; 2	Compara com 15, menor é sinal de sincronismo
+	bcs	@piloto					; 2+	Se >= 16 ainda nao achamos sincronismo, volta a testar piloto
+	cmp	#0					; 2	Se o sinal piloto for correto, Acc será 0 (pois recebeu bits 0)
+	bne	@piloto_inicio				; 2+
+@sync:
+:
+	bit	TAPEIN					; 4	Pula um semiciclo do sync
+	bpl	:-					; 2+
+
+	lda	#$30					; 2	Opcode BMI
+
+	cpx	#12					; 2	Compara com 12, menor significa sync completo (C=0), maior significa piloto+sync (C=1)
+	bcc	@noinv					; 2+
+	lda	#$10					; 2	Opcode BPL
+	sta	@inv1					; 4
+:
+	bit	TAPEIN					; 4	Pula o semiciclo faltante do sync
+	bmi	:-					; 2+
+@noinv:
+:
+	bit	TAPEIN					; 4	Pula o semiciclo faltante do sync
+@inv1:
+	bmi	:-					; 2+
+	sta	@inv2					; 4
+	eor	#$20					; 2
+	sta	@inv3					; 4
+	sec						; 2
+	lda	#$FE					; 2	Bit0 é 0 para marcar o término de 4 rotações duplas
+	sta	DADO					; 3
+	ldx	#0					; 2	Começamos a contar a largura do pulso
+	jmp	@prim_sc				; 3	Começa a contar primeiro ciclo
+
+; O esquema de leitura foi dividido em duas partes, uma para cada semiciclo, para dividir a temporização
+; Na contabilização do segundo semiciclo, carregamos o dado da tabela
+; Contabilizamos a largura do primeiro semiciclo e gravamos o byte do ciclo anterior
+
+@grava:							;	Nessa parte gastamos muitos ciclos, é necessário equilibrar as outras partes
+	and	DADO					; 2	Filtra com valor lido da tabela (acerta bits 1 e 0)
+@bufptr:
+	sta	$0000, y				; 5+	Guarda no buffer
+	eor	CHECKSUM				; 3	Calcula checksum
+	sta	CHECKSUM				; 3
+	iny						; 2	Incrementa ponteiro do buffer
+	bne	:+					; 2+
+	inc	@bufptr+2				; 6
+:
+	lda	#$FE					; 2	Recarrega Acc para próximo byte
+	sta	DADO					; 3
+							; total 27-28 ou 33-34
+
+@seg_semiciclo:
+:
+	inx						; 2	Contabilizamos o segundo semiciclo (negativo)
+	bit	TAPEIN					; 4
+@inv2:
+	bmi	:-					; 2+
+	sec						; 2
+	rol	DADO					; 5	Rotaciona DADO para esquerda, colocando 1 no bit0 e bit7 no Carry
+	rol	DADO					; 5	Rotaciona DADO para esquerda, colocando Carry (bit7 anterior) no bit0, e bit7 no Carry
+	lda	tabela, x				; 5+	Carrega valor da tabela
+	ldx	#0					; 2	Zeramos X
+							; total = 21 ou 22
+
+@prim_sc:						; aqui chega com 21 ciclos depois do sync
+:
+	inx						; 2	Contabiliza 1. semiciclo (positivo)
+	bit	TAPEIN					; 4
+@inv3:
+	bpl	:-					; 2+
+	bcc	@grava					; 2+	Se C=0, acabamos 4 rotações do DADO, o byte está completo (do ciclo anterior)
+	and	DADO					; 2	Filtra com valor lido da tabela (acerta bits 1 e 0)
+	sta	DADO					; 3
+	php						; 3	Essas 4 instruções são para gastar ciclos, para equilibrar as 2 partes
+	plp						; 4
+	php						; 3
+	plp						; 4
+	bne	@seg_semiciclo				; 2+	Se N=0, acabou a leitura
+							; total = 26
+
+	lda	CHECKSUM				; Testa checksum (correto se for $00)
+	bne	@erro
+	rts
+@erro:
+	jsr	MON_PRERR				; Erro de Checksum, sair avisando
+	jmp	$C72B
+header:
+	.word	$0000					; Ponteiro do bloco que será carregado pelo código
+acao:
+	nop						; Esse opcode será carregado pelo código, mudará conforme escolha do usuário
+	jmp	(header)				; Esse opcode será carregado pelo código, mudará conforme escolha do usuário
+cs:
+	nop						; Receberá último byte para cálculo do checksum
+carga_bloco:
+	lda	#<(header)
+	ldy	#>(header)
+	jsr	inicio
+	lda	header
+	ldy	header+1
+	jsr	inicio
+	lda	#$EA					; Coloca opcode NOP em 'cs', pois poderá ser executado
+	sta	cs
+	jmp	acao
+
+tabela:

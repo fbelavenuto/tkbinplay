@@ -1,0 +1,3 @@
+[submodule "a2lib"]
+	path = a2lib
+	url = git@github.com:fbelavenuto/apple2lib.git
