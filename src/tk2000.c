@@ -270,8 +270,9 @@ int tk2000_playBinarioCR_buffer(char *buffer, int len, int endCarga,
 	} else if (acao == ACTION_RETURN) {
 		cab.opcode2 = 0x60;			/* RTS */
 	} else if (acao == ACTION_CUSTOM) {
-		cab.opcode2 = endJump >> 16;
-		cab.endJump = endJump & 0xFFFF;
+		unsigned char *p = (unsigned char *)&endJump;
+		cab.opcode2 = p[2];
+		cab.endJump = p[0] << 8 | p[1];
 	} else {
 		if (acao == ACTION_JUMP)
 			cab.opcode2 = 0x4C;		/* JMP xxxx */
