@@ -302,16 +302,21 @@ int main (int argc, char **argv) {
 	}
 	for (i=0; i < countEntries; i++) {
 		if (verbose) {
-			fprintf(stderr, "Processing:\n\tfilename='%s', chargeAddr='%04X'\n\t action=%s, callAddr='%06X', silence='%d ms'\n",
-					entries[i].filename, entries[i].chargeAddr, actionsStr[entries[i].action], entries[i].callAddr, entries[i].silence);
+			fprintf(stderr, "Processing:\n\t");
 		}
 		buffer = NULL;
 		if (strlen(entries[i].filename) > 0) {
 			sprintf(filename, "%s%s", iniPath, entries[i].filename);
+			fprintf(stderr, "filename='%s', ", filename);
 			buffer = loadBin(filename, &filesize);
 			if (!buffer) {
 				fprintf(stderr, "Error reading file '%s'\n", entries[i].filename);
+				break;
 			}
+		}
+		if (verbose) {
+			fprintf(stderr, "chargeAddr='%04X'\n\t action=%s, callAddr='%06X', silence='%d ms'\n",
+					entries[i].chargeAddr, actionsStr[entries[i].action], entries[i].callAddr, entries[i].silence);
 		}
 		tk2000_playBinarioCR_buffer(buffer, filesize, entries[i].chargeAddr, entries[i].action, entries[i].callAddr, entries[i].silence);
 		if (buffer) {

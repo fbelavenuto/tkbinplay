@@ -52,6 +52,7 @@ char *onlyPath(const char *s) {
 	char *p = (char *)(s + strlen(s));
 	while(--p > s) {
 		if (*p == '/' || *p == '\\') {
+			++p;
 			break;
 		}
 	}
