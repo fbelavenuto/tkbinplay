@@ -184,7 +184,7 @@ int main (int argc, char **argv) {
 	unsigned int    samplesPerBit = 4;
 	unsigned int    bits = 16;
 	double			volume = 1.0;
-	char			*t, *iniPath, filename[MAX_PATH];
+	char			*iniPath, filename[MAX_PATH];
 	char 			*outputfile = NULL;
 	unsigned int    filesize = 0;
 	char            *buffer;
@@ -271,9 +271,8 @@ int main (int argc, char **argv) {
 		fprintf(stderr, "Can't load '%s'\n", argv[optind]);
 		return 1;
 	}
-	t = realpath(argv[optind], NULL);
-	iniPath = onlyPath(t);
-	free(t);
+	iniPath = onlyPath(argv[optind]);
+	printf("%s\n", iniPath);
 
 	if (!outputfile) {
 		outputfile = withoutExt(argv[optind]);
@@ -308,7 +307,7 @@ int main (int argc, char **argv) {
 		}
 		buffer = NULL;
 		if (strlen(entries[i].filename) > 0) {
-			sprintf(filename, "%s/%s", iniPath, entries[i].filename);
+			sprintf(filename, "%s%s", iniPath, entries[i].filename);
 			buffer = loadBin(filename, &filesize);
 			if (!buffer) {
 				fprintf(stderr, "Error reading file '%s'\n", entries[i].filename);

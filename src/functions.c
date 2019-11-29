@@ -49,14 +49,17 @@ char *withoutExt(const char *s) {
 
 /*****************************************************************************/
 char *onlyPath(const char *s) {
-	char *o = (char *)malloc(strlen(s) + 1);
-	strcpy(o, s);
-	char *p = (char *)(o + strlen(o));
-	while(--p > o) {
+	char *p = (char *)(s + strlen(s));
+	while(--p > s) {
 		if (*p == '/' || *p == '\\') {
-			*p = '\0';
 			break;
 		}
+	}
+	unsigned int l = p - s;
+	char *o = (char *)malloc(l+1);
+	memset(o, 0, l+1);
+	if (l > 0) {
+		memcpy(o, s, l);
 	}
 	return o;
 }
