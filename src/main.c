@@ -272,7 +272,6 @@ int main (int argc, char **argv) {
 		return 1;
 	}
 	iniPath = onlyPath(argv[optind]);
-	printf("%s\n", iniPath);
 
 	if (!outputfile) {
 		outputfile = withoutExt(argv[optind]);
