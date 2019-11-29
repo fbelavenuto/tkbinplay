@@ -1,11 +1,19 @@
-/* tkbinplay - Carga rapida para micros TKs
+/* tkbinplay - Fast cassete load for TK micro
  *
- * Copyright 2014-2020 Fábio Belavenuto
+ * Copyright (C) 2014-2020  Fabio Belavenuto
  *
- * Este arquivo é distribuido pela Licença Pública Geral GNU.
- * Veja o arquivo "LICENSE" distribuido com este software.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * ESTE SOFTWARE NÃO OFERECE NENHUMA GARANTIA
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include <stdlib.h>
@@ -13,59 +21,80 @@
 #include <string.h>
 #include <unistd.h>
 #include "version.h"
+#include "functions.h"
 #include "ini.h"
 #include "wav.h"
 #include "tk2000.h"
 
-// Definições
-#define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
-#ifndef MAX_PATH
-#define MAX_PATH 260
-#endif
+// Defines
 
-struct onefile {
-	char 				*filename;
-	int  				chargeAddr;
-	int  				callAddr;
-	enum tk2000_acoes	action;
-	int					silence;
+// Enums
+enum systems {
+	SYSTEM_TK2000 = 0,
 };
 
-const char *ondas[] = {"Square", "Sine"};
-const char *acoes[] = {"Jump", "Call", "Nothing", "Return"};
+// Structs
+struct entry {
+	char 			*filename;
+	int  			chargeAddr;
+	int  			callAddr;
+	enum actions	action;
+	int				silence;
+};
 
-// Variáveis
-static char				tk2000_name[7];
-static struct onefile	*files = NULL;
-static int				countFiles = 0;
+// Constants
+static const char *systemStr[] = {"TK2000"};
+static const unsigned int systemStrCount = sizeof(systemStr) / sizeof(const char *);
+static const char *wavesStr[] = {"Square", "Sine"};
+//static const unsigned int wavesStrCount =  sizeof(wavesStr) / sizeof(const char *);
+static const char *actionsStr[] = {"Jump", "Call", "Nothing", "Return", "Custom"};
+static const unsigned int actionStrCount = sizeof(actionsStr) / sizeof(const char *);
+
+// Variables
+static enum systems machsys = SYSTEM_TK2000;
+static char			nameCas[32];
+static struct entry	*entries = NULL;
+static int			countEntries = 0;
 
 
-// Funções
+// Functions
 
-static int handler(void* user, const char* section, const char* name, const char* value) {
-	int						i, chargeAddr, callAddr, silence;
-	char					c, *v1, *v2;
-	static struct onefile	*tmp2;
-	char					tmp[MAX_PATH], *file;
-	enum					tk2000_acoes action;
+/*****************************************************************************/
+static int handler(void* user, const char* section, 
+			const char* name, const char* value) {
+	int					i, chargeAddr, callAddr, silence, ok;
+	char				c, *v1, *v2;
+	static struct entry	*tmp2;
+	char				tmp[MAX_PATH], *file;
+	enum actions		action;
 
-	if (MATCH("general", "name")) {
-		// tk2000 name
-		for (i = 0; i < MIN(strlen(value), 6); i++) {
+	if (MATCH("general", "system")) {
+		for (i = 0; i < systemStrCount; i++) {
+			if (strcmp(value, systemStr[i]) == 0) {
+				machsys = i;
+				return 1;
+			}
+		}
+		return 0;
+	} else if (MATCH("general", "name")) {
+		// Name presented in the machine
+		for (i = 0; i < MIN(strlen(value), sizeof(name)); i++) {
 			c = value[i];
 			if (c >= 'a' && c <= 'z') {
 				c -= 32;
 			}
-			tk2000_name[i] = c;
+			nameCas[i] = c;
 		}
-	} else if (MATCH("blocks", "entry")) {
+	} else if (MATCH("entries", "entry")) {
 		// entrada, formato: arquivo,inicio,action,call,silence (inicio e call em HEXA)
 		v1 = strchr(value, ',');
 		if (v1 == NULL) {
 			return 0;
 		}
 		memset(tmp, 0, MAX_PATH);
-		memcpy(tmp, value, v1-value);		// arquivo
+		if (v1 > value) {
+			memcpy(tmp, value, v1-value);
+		}
 		file = strdup(tmp);
 		++v1;
 		v2 = strchr(v1, ',');
@@ -75,7 +104,7 @@ static int handler(void* user, const char* section, const char* name, const char
 		}
 		memset(tmp, 0, MAX_PATH);
 		memcpy(tmp, v1, v2-v1);
-		sscanf(tmp, "%X", &chargeAddr);		// inicio
+		sscanf(tmp, "%X", &chargeAddr);		// Charge Address
 		++v2;
 		v1 = strchr(v2, ',');
 		if (v1 == NULL) {
@@ -84,7 +113,18 @@ static int handler(void* user, const char* section, const char* name, const char
 		}
 		memset(tmp, 0, MAX_PATH);
 		memcpy(tmp, v2, v1-v2);
-		sscanf(tmp, "%d", (int *)&action);	// action
+		ok = 0;
+		for (i = 0; i < actionStrCount; i++) {
+			if (strcmp(tmp, actionsStr[i]) == 0) {
+				action = i;
+				ok = 1;
+				break;
+			}
+		}
+		if (ok == 0) {
+			fprintf(stderr, "Action not recognized: %s\n", tmp);
+			return 0;
+		}
 		++v1;
 		v2 = strchr(v1, ',');
 		if (v2 == NULL) {
@@ -93,72 +133,30 @@ static int handler(void* user, const char* section, const char* name, const char
 		}
 		memset(tmp, 0, MAX_PATH);
 		memcpy(tmp, v1, v2-v1);
-		sscanf(tmp, "%X", &callAddr);		// call
+		sscanf(tmp, "%X", &callAddr);		// call or custom
 		++v2;
 		memset(tmp, 0, MAX_PATH);
 		strcpy(tmp, v2);
 		sscanf(tmp, "%d", &silence);		// silence
 
-		if ((tmp2 = realloc(files, (countFiles+1) * sizeof(struct onefile))) == NULL) {
-			fprintf(stderr, "Error: could not allocate file #%d\n", countFiles+1);
+		if ((tmp2 = realloc(entries, (countEntries+1) * sizeof(struct entry))) == NULL) {
+			fprintf(stderr, "Error: no enough memory to add entry #%d\n", countEntries+1);
 			abort();
 		}
-		files = tmp2;
-		files[countFiles].filename = file;
-		files[countFiles].chargeAddr = chargeAddr;
-		files[countFiles].callAddr = callAddr;
-		files[countFiles].action = action;
-		files[countFiles].silence = silence;
-		++countFiles;
+		entries = tmp2;
+		entries[countEntries].filename = file;
+		entries[countEntries].chargeAddr = chargeAddr;
+		entries[countEntries].callAddr = callAddr;
+		entries[countEntries].action = action;
+		entries[countEntries].silence = silence;
+		++countEntries;
 	} else {
 		return 0;  /* unknown section/name, error */
 	}
 	return 1;
 }
 
-// =============================================================================
-char *getext(char *filename)
-{
-	char stack[256], *rval;
-	int i, sp = 0;
-
-	for (i = strlen(filename) - 1; i >= 0; i--) {
-		if(filename[i] == '.')
-			break;
-		stack[sp++] = filename[i];
-	}
-	stack[sp] = '\0';
-
-	if(sp == strlen(filename) || sp == 0)
-		return(NULL);
-
-	if((rval = (char *)malloc(sp * sizeof(char))) == NULL)
-		; //do error code
-
-	rval[sp] = '\0';
-	for(i=0;i<sp+i;i++)
-		rval[i] = stack[--sp];
-
-	return(rval);
-}
-
-// =============================================================================
-char *loadBin(char *fileName, unsigned int *fileSize) {
-	char *dados = NULL;
-
-	FILE *fileBin = fopen(fileName, "rb");
-	if (!fileBin)
-		return NULL;
-	fseek(fileBin, 0, SEEK_END);
-	*fileSize = (unsigned int)(ftell(fileBin));
-	fseek(fileBin, 0, SEEK_SET);
-	dados = (char *)malloc(*fileSize);
-	fread(dados, 1, *fileSize, fileBin);
-	fclose(fileBin);
-	return dados;
-}
-
-// =============================================================================
+/*****************************************************************************/
 void usage() {
 	fprintf(stderr, "tkbinplay %s\n\n", VERSION);
 	fprintf(stderr, "Usage: tkbinplay {options} [input INI file]\n");
@@ -177,9 +175,8 @@ void usage() {
 	fprintf(stderr, "\n");
 }
 
-// =============================================================================
-int main (int argc, char **argv)
-{
+/*****************************************************************************/
+int main (int argc, char **argv) {
 	int				i, c;
 	int				inverse = 0, verbose = 0;
 	enum TipoOnda	formaOnda = TO_SENOIDAL;
@@ -187,6 +184,7 @@ int main (int argc, char **argv)
 	unsigned int    samplesPerBit = 4;
 	unsigned int    bits = 16;
 	double			volume = 1.0;
+	char			*t, *iniPath, filename[MAX_PATH];
 	char 			*outputfile = NULL;
 	unsigned int    filesize = 0;
 	char            *buffer;
@@ -265,9 +263,6 @@ int main (int argc, char **argv)
 		return 1;
 	}
 
-	if (!outputfile) {
-		outputfile = "out.wav";
-	}
 	if (verbose) {
 		fprintf(stderr,"\n");
 	}
@@ -276,10 +271,19 @@ int main (int argc, char **argv)
 		fprintf(stderr, "Can't load '%s'\n", argv[optind]);
 		return 1;
 	}
+	t = realpath(argv[optind], NULL);
+	iniPath = onlyPath(t);
+	free(t);
 
+	if (!outputfile) {
+		outputfile = withoutExt(argv[optind]);
+		strcat(outputfile, ".wav");
+	}
 	if (verbose) {
 		fprintf(stderr, "Making wave. Configs:\n");
-		fprintf(stderr, "Rate = %d, Bits: %d, Inverse: %d, Wave format: %s, Volume: %.02f\n", taxaAmostragem, bits, inverse, ondas[formaOnda], volume);
+		fprintf(stderr, 
+			"System: %s, Rate: %d, Bits: %d, Inverse: %d, Wave format: %s, Volume: %.02f\n",
+		 	systemStr[machsys], taxaAmostragem, bits, inverse, wavesStr[formaOnda], volume);
 	}
 	tk2000_samplesPerBit(taxaAmostragem, samplesPerBit);
 	wavConfig(formaOnda, taxaAmostragem, bits, volume, inverse);
@@ -288,27 +292,36 @@ int main (int argc, char **argv)
 		fprintf(stderr, "Error creating output file '%s'\n", outputfile);
 		return 1;
 	}
-	tk2000_playBinarioCR_autoload(tk2000_name);
+	tk2000_playBinarioCR_autoload(nameCas);
 
 	if (verbose) {
-		fprintf(stderr, "# of binaries: %d\n", countFiles);
+		fprintf(stderr, "# of entries: %d\n", countEntries);
 	}
-	for (i=0; i < countFiles; i++) {
+	if (countEntries == 0) {
+		fprintf(stderr, "Error: No entries to process!\n");
+		return 1;
+	}
+	for (i=0; i < countEntries; i++) {
 		if (verbose) {
-			fprintf(stderr, "Processing:\n\tfilename='%s', chargeAddr='%04X'\n\t action=%s, callAddr='%04X', silence='%d ms'\n",
-					files[i].filename, files[i].chargeAddr, acoes[files[i].action], files[i].callAddr, files[i].silence);
+			fprintf(stderr, "Processing:\n\tfilename='%s', chargeAddr='%04X'\n\t action=%s, callAddr='%06X', silence='%d ms'\n",
+					entries[i].filename, entries[i].chargeAddr, actionsStr[entries[i].action], entries[i].callAddr, entries[i].silence);
 		}
-
-		buffer = loadBin(files[i].filename, &filesize);
-		if (!buffer) {
-			fprintf(stderr, "Error on making wave from file '%s'\n", files[i].filename);
-		} else {
-			tk2000_playBinarioCR_buffer(buffer, filesize, files[i].chargeAddr, files[i].action, files[i].callAddr, files[i].silence);
+		buffer = NULL;
+		if (strlen(entries[i].filename) > 0) {
+			sprintf(filename, "%s/%s", iniPath, entries[i].filename);
+			buffer = loadBin(filename, &filesize);
+			if (!buffer) {
+				fprintf(stderr, "Error reading file '%s'\n", entries[i].filename);
+			}
+		}
+		tk2000_playBinarioCR_buffer(buffer, filesize, entries[i].chargeAddr, entries[i].action, entries[i].callAddr, entries[i].silence);
+		if (buffer) {
 			free(buffer);
 		}
-		free((void *)(files[i].filename));
+		free((void *)(entries[i].filename));
 	}
-	free((void *)files);
+	free((void *)entries);
+	free(iniPath);
 
 	if (finalizaWav()) {
 		fprintf(stderr, "Error on finishing wav file\n");

@@ -1,11 +1,19 @@
-/* tkbinplay - Carga rapida para micros TKs
+/* tkbinplay - Fast cassete load for TK micro
  *
- * Copyright 2014-2020 Fábio Belavenuto
+ * Copyright (C) 2014-2020  Fabio Belavenuto
  *
- * Este arquivo é distribuido pela Licença Pública Geral GNU.
- * Veja o arquivo "LICENSE" distribuido com este software.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * ESTE SOFTWARE NÃO OFERECE NENHUMA GARANTIA
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.**
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #define DEBUG 0
@@ -14,44 +22,22 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "functions.h"
 #include "wav.h"
 #include "tk2000.h"
-
 #include "tk2000_ar.h"
 #include "tk2000_cr.h"
 
-//const int tk2000_crfreq[4] = { 14700, 8820, 6300, 4900 }; // 14000, 8800, 6300, 4900
-//const int tk2000_crfreq[4] = { 17640, 17640, 17640, 17640 };	// 2-5		2-5
-//const int tk2000_crfreq[4] = { 14700, 14700, 14700, 14700 };	// 3-4		3-4
-//const int tk2000_crfreq[4] = { 12600, 12600, 12600, 12600 };	// 2-4		3-4
-//const int tk2000_crfreq[4] = { 11025, 11025, 11025, 11025 };	// 5-6		5-7
-//const int tk2000_crfreq[4] = { 9800, 9800, 9800, 9800 };		// 5-6		5-7
-//const int tk2000_crfreq[4] = { 8820, 8820, 8820, 8820 };		// 8-9		8-9
-//const int tk2000_crfreq[4] = { 8018, 8018, 8018, 8018 };		// 8-9		8-9
-//const int tk2000_crfreq[4] = { 7350, 7350, 7350, 7350 };		// 10-11	10-12
-//const int tk2000_crfreq[4] = { 6785, 6785, 6785, 6785 };		// 10-11	11-12
-//const int tk2000_crfreq[4] = { 6300, 6300, 6300, 6300 };		// 13-14	13-14
-//const int tk2000_crfreq[4] = { 5880, 5880, 5880, 5880 };		// 13-14	13-14
-//const int tk2000_crfreq[4] = { 5512, 5512, 5512, 5512 };		// 15-17	15-17
-//const int tk2000_crfreq[4] = { 5188, 5188, 5188, 5188 };		// 16		15-17
-//const int tk2000_crfreq[4] = { 4900, 4900, 4900, 4900 };		// 18-19	18-20
-//const int tk2000_crfreq[4] = { 4642, 4642, 4642, 4642 };		// 18-19	18-21
-//const int tk2000_crfreq[4] = { 4410, 4410, 4410, 4410 };		// 21-22	21-22
-//const int tk2000_crfreq[4] = { 4200, 4200, 4200, 4200 };		// 21-22	21-22
-
-//unsigned int samplesPerBit = 4;
 int tk2000_crfreq[5] = { 11025, 7350, 5512, 4410, 3675 };	// spb=4 sr=44100
 int tk2000_crXval[5] = { 5, 10, 15, 20, 26 };				// spb=4 sr=44100
 
 
-/**
+/*****************************************************************************
  * Configura samples per bit
  */
 void tk2000_samplesPerBit(int sampleRate, unsigned int spb) {
 	int i, x = spb;
 	double f;
-
-//	samplesPerBit = spb;
 	for (i = 0; i < 5; i++) {
 		tk2000_crfreq[i] = sampleRate / x;
 		x += 2;
@@ -62,11 +48,10 @@ void tk2000_samplesPerBit(int sampleRate, unsigned int spb) {
 		fprintf(stderr, "%d\t%d\t%02X\n", tk2000_crfreq[i], tk2000_crXval[i], tk2000_crXval[i]);
 #endif
 	}
-
 }
 
-/**
- * Gera áudio de um byte na velocidade padrão do TK2000
+/*****************************************************************************
+ * Gera audio de um byte na velocidade padrao do TK2000
  * c = byte a ter "tocado"
  */
 int tk2000_playByte(unsigned char c) {
@@ -82,15 +67,15 @@ int tk2000_playByte(unsigned char c) {
 	return r;
 }
 
-/**
- * Gera áudio do buffer
- * buffer = ponteiro do início do buffer
+/*****************************************************************************
+ * Gera audio do buffer
+ * buffer = ponteiro do inicio do buffer
  * len = comprimento do buffer
  */
 int tk2000_playBuffer(unsigned char *buffer, int len) {
 	int r = 0, i;
 
-	r |= geraTom(TK2000_CABB, 30, 0.5);			// Cabeçalho B
+	r |= geraTom(TK2000_CABB, 30, 0.5);			// Cabecalho B
 	r |= geraTom(TK2000_BIT0, 1, 0.5);			// Sincronismo
 	for (i = 0; i < len; i++) {
 		unsigned char c = buffer[i];
@@ -99,14 +84,15 @@ int tk2000_playBuffer(unsigned char *buffer, int len) {
 	return r;
 }
 
-/**
+/*****************************************************************************
  * Aloca uma estrutura TK2000_STKCab e a preenche
- * nome = nome do arquivo que aparecerá no tk2000, máximo de 6 caracteres
+ * nome = nome do arquivo que aparecera no tk2000, maximo de 6 caracteres
  * total_blocos = total de blocos do arquivo
  * bloco_atual = bloco atual do arquivo
  * return Ponteiro da estrutura alocada e preenchida
  */
-struct TK2000_STKCab *tk2000_makeCab(char *nome, int total_blocos, int bloco_atual) {
+struct TK2000_STKCab *tk2000_makeCab(char *nome, int total_blocos,
+		int bloco_atual) {
 	unsigned int i;
 	struct TK2000_STKCab *dh = (struct TK2000_STKCab *)malloc(sizeof(struct TK2000_STKCab));
 	memset(dh, 0, sizeof(struct TK2000_STKCab));
@@ -119,14 +105,15 @@ struct TK2000_STKCab *tk2000_makeCab(char *nome, int total_blocos, int bloco_atu
 	return dh;
 }
 
-/**
- * Aloca buffer de dados com cabeçalho e checksum
- * dh    = cabeçalho já criado e preenchido
+/*****************************************************************************
+ * Aloca buffer de dados com cabecalho e checksum
+ * dh    = cabecalho ja criado e preenchido
  * dados = buffer de entrada
  * len = tamanho do buffer de entrada
  * return Buffer alocado com cabecalho e checksum
  */
-char *tk2000_makeDataBlock(struct TK2000_STKCab *dh, unsigned char *dados, int len) {
+char *tk2000_makeDataBlock(struct TK2000_STKCab *dh, 
+		unsigned char *dados, int len) {
 	int i, t = sizeof(struct TK2000_STKCab);
 	char *out = (char *)malloc(t + len + 1);
 	unsigned char cs = 0xFF;
@@ -140,15 +127,16 @@ char *tk2000_makeDataBlock(struct TK2000_STKCab *dh, unsigned char *dados, int l
 	return out;
 }
 
-/**
- * Cria cabecalho de código binário e gera áudio do cabecalho e dados
- * dados = buffer contendo o código binário
+/*****************************************************************************
+ * Cria cabecalho de codigo binario e gera audio do cabecalho e dados
+ * dados = buffer contendo o codigo binario
  * len = tamanho do buffer
- * nome = nome que aparecerá no tk2000 ao carregar
- * endInicial = endereço inicial de carga do código binário
+ * nome = nome que aparecera no tk2000 ao carregar
+ * endInicial = endereco inicial de carga do codigo binario
  * return 0 se OK, 1 se erro
  */
-int tk2000_playBinario(unsigned char *dados, int len, char *nome, int endInicial) {
+int tk2000_playBinario(unsigned char *dados, int len, char *nome,
+		int endInicial) {
 	struct TK2000_STKCab *dh;
 	struct TK2000_STKEnd de;
 	char *buffer = NULL;
@@ -158,8 +146,8 @@ int tk2000_playBinario(unsigned char *dados, int len, char *nome, int endInicial
 		return 1;
 	t1 = sizeof(struct TK2000_STKCab);
 	t2 = sizeof(struct TK2000_STKEnd);
-	tb = ((len-1) / 256)+1;					// Calcula quantos blocos são necessários
-	dh = tk2000_makeCab(nome, tb, 0);		// Cria primeiro bloco com informações
+	tb = ((len-1) / 256)+1;					// Calcula quantos blocos sï¿½o necessï¿½rios
+	dh = tk2000_makeCab(nome, tb, 0);		// Cria primeiro bloco com informaï¿½ï¿½es
 	de.endInicial = endInicial;
 	de.endFinal = endInicial + len - 1;
 	buffer = tk2000_makeDataBlock(dh, (unsigned char *)&de, t2);
@@ -182,7 +170,7 @@ int tk2000_playBinario(unsigned char *dados, int len, char *nome, int endInicial
 	return r;
 }
 
-// =============================================================================
+/*****************************************************************************/
 int tk2000_playCR_byte(unsigned char c) {
 	// Manda 2 bits por vez
 	unsigned char mask = 0xC0;		// MSB primeiro
@@ -197,7 +185,7 @@ int tk2000_playCR_byte(unsigned char c) {
 	return r;
 }
 
-// =============================================================================
+/*****************************************************************************/
 int tk2000_playCR_buffer (char *dados, int len) {
 	unsigned char cs = 0;
 	int i, r = 0;;
@@ -215,13 +203,14 @@ int tk2000_playCR_buffer (char *dados, int len) {
 	return r;
 }
 
-// =============================================================================
+/*****************************************************************************/
 int tk2000_playBinarioCR_autoload(char *nome) {
 	int           r = 0, i, j, k, lk, pb, bufsize;
 	unsigned char c = 0xFC;
 	unsigned char *buffer = NULL;
 
-	r |= tk2000_playBinario((unsigned char *)tk2000_autoload, sizeof(tk2000_autoload), nome, 0x0036);
+	r |= tk2000_playBinario((unsigned char *)tk2000_autoload, 
+			sizeof(tk2000_autoload), nome, 0x0036);
 	
 	bufsize = sizeof(tk2000_cr) + tk2000_crXval[4] + 10;
 	buffer = (unsigned char *)malloc(bufsize + 1);
@@ -262,28 +251,38 @@ int tk2000_playBinarioCR_autoload(char *nome) {
 	return r;
 }
 
-// =============================================================================
-int tk2000_playBinarioCR_buffer(char *buffer, int len, int endCarga, enum tk2000_acoes acao, int endJump, int silence) {
+/*****************************************************************************/
+int tk2000_playBinarioCR_buffer(char *buffer, int len, int endCarga, 
+		enum actions acao, int endJump, int silence) {
 	int r = 0;
 	struct TK2000_SCRCab cab;
 
 	/* Gerar cabecalho */
-	cab.endCarga = (unsigned short)endCarga;
+	if (buffer) {
+		cab.endCarga = (unsigned short)endCarga;
+	} else {
+		cab.endCarga = 0;
+	}
 	cab.opcode1 = 0xEA;
-	if (acao == ACAO_TK2000_NADA) {
+	if (acao == ACTION_NOTHING) {
 		cab.opcode2 = 0xEA;			/* NOP */
 		cab.endJump = 0xEAEA;		/* NOP NOP */
-	} else if (acao == ACAO_TK2000_RETURN) {
+	} else if (acao == ACTION_RETURN) {
 		cab.opcode2 = 0x60;			/* RTS */
+	} else if (acao == ACTION_CUSTOM) {
+		cab.opcode2 = endJump >> 16;
+		cab.endJump = endJump & 0xFFFF;
 	} else {
-		if (acao == ACAO_TK2000_JUMP)
+		if (acao == ACTION_JUMP)
 			cab.opcode2 = 0x4C;		/* JMP xxxx */
-		else if (acao == ACAO_TK2000_CALL)
+		else if (acao == ACTION_CALL)
 			cab.opcode2 = 0x20;		/* JSR xxxx */
-		cab.endJump = endJump;
+		cab.endJump = endJump & 0xFFFF;
 	}
 	r |= tk2000_playCR_buffer((char *)&cab, sizeof(struct TK2000_SCRCab));
-	r |= tk2000_playCR_buffer(buffer, len);
+	if (buffer) {
+		r |= tk2000_playCR_buffer(buffer, len);
+	}
 	r |= geraSilencio(silence);
 
 	return r;

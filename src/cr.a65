@@ -1,11 +1,19 @@
-; tkbinplay - Carga rapida para micros TKs
+; tkbinplay - Fast cassete load for TK micro
 ;
-; Copyright 2014-2020 F·bio Belavenuto
+; Copyright (C) 2014-2020  Fabio Belavenuto
 ;
-; Este arquivo È distribuido pela LicenÁa P˙blica Geral GNU.
-; Veja o arquivo "LICENSE" distribuido com este software.
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
 ;
-; ESTE SOFTWARE N√O OFERECE NENHUMA GARANTIA
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 	.include "sys.def"
@@ -19,7 +27,7 @@
 ;
 
 DADO		:= $F0
-CHECKSUM	:= $F1
+CHECKSUM	:= $F2
 
 ;TAPEIN		:= $C060
 TAPEIN		:= $C010
@@ -29,13 +37,13 @@ TAPEIN		:= $C010
 
 	jmp	carga_bloco
 inicio:
-	sta	@bufptr+1				; A e Y contÈm endereÁo do buffer de destino
+	sta	@bufptr+1				; A e Y cont√©m endere√ßo do buffer de destino
 	sty	@bufptr+2
-	ldy	#0					; Usamos Y para controlar a posiÁ„o atual do buffer
+	ldy	#0					; Usamos Y para controlar a posi√ß√£o atual do buffer
 	sty	CHECKSUM				; Zeramos checksum
 
 @piloto_inicio:
-	lda	#$FF					; 2	Usado para receber bits conforme pulsos do piloto s„o v·lidos
+	lda	#$FF					; 2	Usado para receber bits conforme pulsos do piloto s√£o v√°lidos
 @piloto:
 	ldx	#0					; 2	Contador do pulso piloto
 :
@@ -47,11 +55,11 @@ inicio:
 	bit	TAPEIN					; 4
 	bmi	:-					; 2+
 
-	cpx	#22					; 2	Compara com 22, maior que isso È erro (menor faz C=0)
+	cpx	#22					; 2	Compara com 22, maior que isso √© erro (menor faz C=0)
 	rol	a					; 2	Joga carry no ACC
-	cpx	#16					; 2	Compara com 15, menor È sinal de sincronismo
+	cpx	#16					; 2	Compara com 15, menor √© sinal de sincronismo
 	bcs	@piloto					; 2+	Se >= 16 ainda nao achamos sincronismo, volta a testar piloto
-	cmp	#0					; 2	Se o sinal piloto for correto, Acc ser· 0 (pois recebeu bits 0)
+	cmp	#0					; 2	Se o sinal piloto for correto, Acc ser√° 0 (pois recebeu bits 0)
 	bne	@piloto_inicio				; 2+
 @sync:
 :
@@ -76,16 +84,16 @@ inicio:
 	eor	#$20					; 2
 	sta	@inv3					; 4
 	sec						; 2
-	lda	#$FE					; 2	Bit0 È 0 para marcar o tÈrmino de 4 rotaÁıes duplas
+	lda	#$FE					; 2	Bit0 √© 0 para marcar o t√©rmino de 4 rota√ß√µes duplas
 	sta	DADO					; 3
-	ldx	#0					; 2	ComeÁamos a contar a largura do pulso
-	jmp	@prim_sc				; 3	ComeÁa a contar primeiro ciclo
+	ldx	#0					; 2	Come√ßamos a contar a largura do pulso
+	jmp	@prim_sc				; 3	Come√ßa a contar primeiro ciclo
 
-; O esquema de leitura foi dividido em duas partes, uma para cada semiciclo, para dividir a temporizaÁ„o
-; Na contabilizaÁ„o do segundo semiciclo, carregamos o dado da tabela
+; O esquema de leitura foi dividido em duas partes, uma para cada semiciclo, para dividir a temporiza√ß√£o
+; Na contabiliza√ß√£o do segundo semiciclo, carregamos o dado da tabela
 ; Contabilizamos a largura do primeiro semiciclo e gravamos o byte do ciclo anterior
 
-@grava:							;	Nessa parte gastamos muitos ciclos, È necess·rio equilibrar as outras partes
+@grava:							;	Nessa parte gastamos muitos ciclos, √© necess√°rio equilibrar as outras partes
 	and	DADO					; 2	Filtra com valor lido da tabela (acerta bits 1 e 0)
 @bufptr:
 	sta	$0000, y				; 5+	Guarda no buffer
@@ -95,7 +103,7 @@ inicio:
 	bne	:+					; 2+
 	inc	@bufptr+2				; 6
 :
-	lda	#$FE					; 2	Recarrega Acc para prÛximo byte
+	lda	#$FE					; 2	Recarrega Acc para pr√≥ximo byte
 	sta	DADO					; 3
 							; total 27-28 ou 33-34
 
@@ -118,10 +126,10 @@ inicio:
 	bit	TAPEIN					; 4
 @inv3:
 	bpl	:-					; 2+
-	bcc	@grava					; 2+	Se C=0, acabamos 4 rotaÁıes do DADO, o byte est· completo (do ciclo anterior)
+	bcc	@grava					; 2+	Se C=0, acabamos 4 rota√ß√µes do DADO, o byte est√° completo (do ciclo anterior)
 	and	DADO					; 2	Filtra com valor lido da tabela (acerta bits 1 e 0)
 	sta	DADO					; 3
-	php						; 3	Essas 4 instruÁıes s„o para gastar ciclos, para equilibrar as 2 partes
+	php						; 3	Essas 4 instru√ß√µes s√£o para gastar ciclos, para equilibrar as 2 partes
 	plp						; 4
 	php						; 3
 	plp						; 4
@@ -135,20 +143,26 @@ inicio:
 	jsr	MON_PRERR				; Erro de Checksum, sair avisando
 	jmp	$C72B
 header:
-	.word	$0000					; Ponteiro do bloco que ser· carregado pelo cÛdigo
+	.word	$0000					; Ponteiro do bloco que ser√° carregado pelo c√≥digo
 acao:
-	nop						; Esse opcode ser· carregado pelo cÛdigo, mudar· conforme escolha do usu·rio
-	jmp	(header)				; Esse opcode ser· carregado pelo cÛdigo, mudar· conforme escolha do usu·rio
+	nop						; Esse opcode ser√° carregado pelo c√≥digo, mudar√° conforme escolha do usu√°rio
+	jmp	(header)				; Esse opcode ser√° carregado pelo c√≥digo, mudar√° conforme escolha do usu√°rio
 cs:
-	nop						; Receber· ˙ltimo byte para c·lculo do checksum
+	nop						; Receber√° √∫ltimo byte para c√°lculo do checksum
 carga_bloco:
 	lda	#<(header)
 	ldy	#>(header)
 	jsr	inicio
 	lda	header
 	ldy	header+1
+	cmp #0
+	bne @temDados
+	cpy #0
+	beq :+
+@temDados:
 	jsr	inicio
-	lda	#$EA					; Coloca opcode NOP em 'cs', pois poder· ser executado
+:
+	lda	#$EA					; Coloca opcode NOP em 'cs', pois poder√° ser executado
 	sta	cs
 	jmp	acao
 

@@ -16,18 +16,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-unsigned char tk2000_autoload[40] = {
-		0x50, 0x00,
-		0x0F, 0xFD, 0x00, 0x00,
-		0x3C, 0x00,
-		0x5D, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xC1,		// 48 = $20 e $A0
+#ifndef FUNCTIONS_H_
+#define FUNCTIONS_H_
 
-		0xA9, 0xF0,				// LDA #$F0
-		0x85, 0x36,				// STA $36
-		0xA9, 0xFD,				// LDA #$FD
-		0x85, 0x37,				// STA $37
-		0x20, 0xAE, 0xED,		// JSR $EDAE
-		0x4C, 0x00, 0x03,		// JMP $0300
+// Defines
+#define MAX(a,b)	(((a) > (b)) ? (a) : (b))
+#define MIN(a,b)	(((a) < (b)) ? (a) : (b))
+#define MATCH(s, n) (strcmp(section, s) == 0 && strcmp(name, n) == 0)
+#ifndef MAX_PATH
+# define MAX_PATH 260
+#endif
+
+// Enums
+enum actions {
+	ACTION_JUMP = 0,
+	ACTION_CALL,
+	ACTION_NOTHING,
+	ACTION_RETURN,
+	ACTION_CUSTOM
 };
+
+// Prototipes
+char *withoutExt(const char *s);
+char *onlyPath(const char *s);
+//char *getExt(char *filename);
+char *loadBin(char *fileName, unsigned int *fileSize);
+
+#endif /* FUNCTIONS_H_ */

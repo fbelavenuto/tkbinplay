@@ -1,28 +1,32 @@
-/*
- * tk2000.h
+/* tkbinplay - Fast cassete load for TK micro
  *
- *  Created on: 24/04/2012
- *      Author: fabio
+ * Copyright (C) 2014-2020  Fabio Belavenuto
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #ifndef TK2000_H_
 #define TK2000_H_
 
+#include "functions.h"
 
-/* Definições */
-#define MAX(a,b)	(((a) > (b)) ? (a) : (b))
-#define MIN(a,b)	(((a) < (b)) ? (a) : (b))
+// Defines
 #define TK2000_BIT0 2000
 #define TK2000_BIT1 1000
 #define	TK2000_CABB 720
 
-enum tk2000_acoes {
-	ACAO_TK2000_JUMP = 0,
-	ACAO_TK2000_CALL,
-	ACAO_TK2000_NADA,
-	ACAO_TK2000_RETURN
-};
-
+// Structs
 struct TK2000_STKCab
 {
 	unsigned char nome[6];
@@ -51,13 +55,13 @@ struct TK2000_SCRCab
 }__attribute__((__packed__));
 
 
-/* Protótipos */
+// Prototipes
 void tk2000_samplesPerBit(int sampleRate, unsigned int spb);
 int tk2000_playBuffer(unsigned char *buffer, int len);
 int tk2000_playBinario(unsigned char *dados, int len, char *nome, int endInicial);
 int tk2000_playCR_byte(unsigned char c);
 int tk2000_playCR_buffer (char *dados, int len);
 int tk2000_playBinarioCR_autoload(char *nome);
-int tk2000_playBinarioCR_buffer(char *buffer, int len, int endCarga, enum tk2000_acoes acao, int endJump, int silence);
+int tk2000_playBinarioCR_buffer(char *buffer, int len, int endCarga, enum actions acao, int endJump, int silence);
 
 #endif /* TK2000_H_ */

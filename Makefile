@@ -24,7 +24,7 @@ AAFLAGS  = -t $(SYS) -l $(ODIR)/$(*).lst -I$(AIDIR)
 ALDFLAGS = -C $(ALDIR)/_config
 
 
-UTILOBJ = main.o wav.o tk2000.o ini.o
+UTILOBJ = main.o wav.o tk2000.o ini.o functions.o
 OBJS = $(addprefix $(ODIR)/, $(UTILOBJ))
 
 ASMOBJ = cr.o
