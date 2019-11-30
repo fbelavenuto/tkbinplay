@@ -46,7 +46,7 @@ struct entry {
 static const char *systemStr[] = {"TK2000"};
 static const unsigned int systemStrCount = sizeof(systemStr) / sizeof(const char *);
 static const char *wavesStr[] = {"Square", "Sine"};
-//static const unsigned int wavesStrCount =  sizeof(wavesStr) / sizeof(const char *);
+static const unsigned int wavesStrCount =  sizeof(wavesStr) / sizeof(const char *);
 static const char *actionsStr[] = {"Jump", "Call", "Nothing", "Return", "Custom"};
 static const unsigned int actionStrCount = sizeof(actionsStr) / sizeof(const char *);
 
@@ -86,7 +86,8 @@ static int handler(void* user, const char* section,
 			nameCas[i] = c;
 		}
 	} else if (MATCH("entries", "entry")) {
-		// entrada, formato: arquivo,inicio,action,call,silence (inicio e call em HEXA)
+		// entry: file, start*, action, call*, silence(ms)
+		// *in HEXA
 		v1 = strchr(value, ',');
 		if (v1 == NULL) {
 			return 0;
@@ -161,26 +162,26 @@ void usage() {
 	fprintf(stderr, "tkbinplay %s\n\n", VERSION);
 	fprintf(stderr, "Usage: tkbinplay {options} [input INI file]\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "\t-a Do not add autoload code.\n");
 	fprintf(stderr, "\t-o [file] output file (.wav).\n");
 	fprintf(stderr, "\t-r [44100|48000] Samplerate, 44100 default.\n");
 	fprintf(stderr, "\t-b [8|16] # bits, 16 default.\n");
-	fprintf(stderr, "\t-i Invert wave.\n");
-	fprintf(stderr, "\t-s Make senoidal wave (default).\n");
-	fprintf(stderr, "\t-q Make square wave.\n");
+	fprintf(stderr, "\t-i Invert wave polarity.\n");
+	fprintf(stderr, "\t-w [square|sine] Format of output wave, sine default.\n");
 	fprintf(stderr, "\t-p [3|4] Samples/bit, 4 default.\n");
-	fprintf(stderr, "\t-V [0-100] Volume, 100 default.\n");
+	fprintf(stderr, "\t-v [0-100] Volume, 100 default.\n");
 	fprintf(stderr, "\t-d Increase verbose output.\n");
 	fprintf(stderr, "\t-h or -? show usage.\n");
-	fprintf(stderr, "\t-v show version.\n");
+	fprintf(stderr, "\t-V show version.\n");
 	fprintf(stderr, "\n");
 }
 
 /*****************************************************************************/
 int main (int argc, char **argv) {
-	int				i, c;
-	int				inverse = 0, verbose = 0;
-	enum TipoOnda	formaOnda = TO_SENOIDAL;
-	unsigned int	taxaAmostragem = 44100;
+	int				i, c, found;
+	int				inverse = 0, verbose = 0, autoload = 1;
+	enum WaveFormat	waveFormat = WF_SINE;
+	unsigned int	sampleRate = 44100;
 	unsigned int    samplesPerBit = 4;
 	unsigned int    bits = 16;
 	double			volume = 1.0;
@@ -190,25 +191,19 @@ int main (int argc, char **argv) {
 	char            *buffer;
 
 	opterr = 1;
-	while((c = getopt(argc, argv, "h?vdr:b:ip:sqo:V:")) != -1) {
+	while((c = getopt(argc, argv, "ao:r:b:iw:p:v:dh?V")) != -1) {
 		switch(c) {
-			case 'h':
-			case '?':
-				usage();
-				return 1;
-
-			case 'v':
-				fprintf(stderr, "\n%s\n\n", VERSION);
-				return 1;
+			case 'a':
+				autoload = 0;
 				break;
 
-			case 'd':
-				++verbose;
+			case 'o':
+				outputfile = optarg;
 				break;
 
 			case 'r':
-				taxaAmostragem = atoi(optarg);
-				if (taxaAmostragem != 44100 && taxaAmostragem != 48000) {
+				sampleRate = atoi(optarg);
+				if (sampleRate != 44100 && sampleRate != 48000) {
 					usage();
 					return 1;
 				}
@@ -222,6 +217,25 @@ int main (int argc, char **argv) {
 				}
 				break;
 
+			case 'i':
+				inverse = 1;
+				break;
+
+			case 'w':
+				found = 0;
+				for (i = 0; i < wavesStrCount; i++) {
+					if (strcmpi(optarg, wavesStr[i]) == 0) {
+						found = 1;
+						break;
+					}
+				}
+				if (found == 0) {
+					usage();
+					return 1;
+				}
+				waveFormat = i;
+				break;
+
 			case 'p':
 				samplesPerBit = atoi(optarg);
 				if (samplesPerBit != 3 && samplesPerBit != 4) {
@@ -230,29 +244,27 @@ int main (int argc, char **argv) {
 				}
 				break;
 
-			case 'i':
-				inverse = 1;
-				break;
-
-			case 's':
-				formaOnda = TO_SENOIDAL;
-				break;
-
-			case 'q':
-				formaOnda = TO_QUADRADA;
-				break;
-
-			case 'o':
-				outputfile = optarg;
-				break;
-
-			case 'V':
+			case 'v':
 				i = atoi(optarg);
 				if (i < 0 || i > 100) {
 					usage();
 					return 1;
 				}
 				volume = (double)i / 100;
+				break;
+
+			case 'd':
+				++verbose;
+				break;
+
+			case 'h':
+			case '?':
+				usage();
+				return 1;
+
+			case 'V':
+				fprintf(stderr, "\n%s\n\n", VERSION);
+				return 1;
 				break;
 
 		}
@@ -263,76 +275,86 @@ int main (int argc, char **argv) {
 		return 1;
 	}
 
-	if (verbose) {
-		fprintf(stderr,"\n");
-	}
-
 	if (ini_parse(argv[optind], handler, NULL) < 0) {
 		fprintf(stderr, "Can't load '%s'\n", argv[optind]);
 		return 1;
 	}
 	iniPath = onlyPath(argv[optind]);
 
-	if (!outputfile) {
-		outputfile = withoutExt(argv[optind]);
+	if (outputfile == NULL) {
+		char *t = withoutExt(argv[optind]);
+		char *p = t;
+		p += strlen(iniPath);
+		outputfile = (char *)malloc(strlen(p) + 1);
+		strcpy(outputfile, p);
 		strcat(outputfile, ".wav");
+		free(t);
 	}
 	if (verbose) {
-		fprintf(stderr, "Making wave. Configs:\n");
 		fprintf(stderr, 
-			"System: %s, Rate: %d, Bits: %d, Inverse: %d, Wave format: %s, Volume: %.02f\n",
-		 	systemStr[machsys], taxaAmostragem, bits, inverse, wavesStr[formaOnda], volume);
+			"System: %s, Rate: %d, Bits: %d, SPB: %d, Inverse: %d, Wave format: %s, Volume: %.02f\n",
+		 	systemStr[machsys], sampleRate, bits, samplesPerBit, inverse, wavesStr[waveFormat], volume);
 	}
-	tk2000_samplesPerBit(taxaAmostragem, samplesPerBit);
-	wavConfig(formaOnda, taxaAmostragem, bits, volume, inverse);
-
-	if (criaWav(outputfile)) {
-		fprintf(stderr, "Error creating output file '%s'\n", outputfile);
-		return 1;
-	}
-	tk2000_playBinarioCR_autoload(nameCas);
+	tk2000_samplesPerBit(sampleRate, samplesPerBit);
+	wavConfig(waveFormat, sampleRate, bits, volume, inverse);
 
 	if (verbose) {
-		fprintf(stderr, "# of entries: %d\n", countEntries);
+		fprintf(stderr, "Count of entries: %d\n", countEntries);
 	}
 	if (countEntries == 0) {
 		fprintf(stderr, "Error: No entries to process!\n");
 		return 1;
 	}
-	for (i=0; i < countEntries; i++) {
-		if (verbose) {
-			fprintf(stderr, "Processing:\n\t");
-		}
+	if (verbose) {
+		fprintf(stderr, "Creating output file '%s'.\n", outputfile);
+	}
+	if (makeWavFile(outputfile)) {
+		fprintf(stderr, "Error creating output file '%s'\n", outputfile);
+		return 1;
+	}
+	if (autoload == 1) {
+		tk2000_playBinCR_autoload(nameCas);
+	}
+
+	for (i = 0; i < countEntries; i++) {
 		buffer = NULL;
-		if (strlen(entries[i].filename) > 0) {
-			sprintf(filename, "%s%s", iniPath, entries[i].filename);
-			fprintf(stderr, "filename='%s', ", filename);
+		strcpy(filename, entries[i].filename);
+		if (strlen(filename) > 0) {
 			buffer = loadBin(filename, &filesize);
+			if (!buffer) {
+				sprintf(filename, "%s%s", iniPath, entries[i].filename);
+				buffer = loadBin(filename, &filesize);
+			}
 			if (!buffer) {
 				fprintf(stderr, "Error reading file '%s'\n", entries[i].filename);
 				break;
 			}
 		}
 		if (verbose) {
-			fprintf(stderr, "chargeAddr='%04X'\n\t action=%s, callAddr='%06X', silence='%d ms'\n",
-					entries[i].chargeAddr, actionsStr[entries[i].action], entries[i].callAddr, entries[i].silence);
+			fprintf(stderr, "Entry %d: ", i+1);
+			fprintf(stderr, "Charge Addr=%04X, Action=%s, ",
+					entries[i].chargeAddr, actionsStr[entries[i].action]);
+			if (entries[i].action == ACTION_CUSTOM) {
+				fprintf(stderr, "Custom Opcodes=%06X, ", entries[i].callAddr);
+			} else {
+				fprintf(stderr, "Call Addr=%04X, ", entries[i].callAddr);
+			}
+			fprintf(stderr, "silence=%d ms\n", entries[i].silence);
 		}
-		tk2000_playBinarioCR_buffer(buffer, filesize, entries[i].chargeAddr, entries[i].action, entries[i].callAddr, entries[i].silence);
+		tk2000_playBinCR_buffer(buffer, filesize, entries[i].chargeAddr, entries[i].action, entries[i].callAddr, entries[i].silence);
 		if (buffer) {
 			free(buffer);
 		}
 		free((void *)(entries[i].filename));
 	}
-	free((void *)entries);
-	free(iniPath);
 
-	if (finalizaWav()) {
+	if (finishWaveFile()) {
 		fprintf(stderr, "Error on finishing wav file\n");
 		return 1;
 	}
 
-	if (verbose) {
-		fprintf(stderr, "Wav file '%s' finished.\n", outputfile);
-	}
+	free((void *)entries);
+	free(iniPath);
+	free(outputfile);
 	return 0;
 }

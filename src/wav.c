@@ -1,11 +1,19 @@
-/* tkbinplay - Carga rapida para micros TKs
+/* tkbinplay - Fast cassete load for TK micro
  *
- * Copyright 2014-2020 Fábio Belavenuto
+ * Copyright (C) 2014-2020  Fabio Belavenuto
  *
- * Este arquivo é distribuido pela Licença Pública Geral GNU.
- * Veja o arquivo "LICENSE" distribuido com este software.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * ESTE SOFTWARE NÃO OFERECE NENHUMA GARANTIA
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include <stdlib.h>
@@ -15,39 +23,39 @@
 #include <math.h>
 #include "wav.h"
 
-/* Variáveis */
-enum TipoOnda tipoOnda       = TO_QUADRADA;
-unsigned int  taxaAmostragem = 44100;
-unsigned int  bits           = 8;
-double        volume         = 1.0;
-int           invertido      = 0;
-unsigned int  totalDados     = 0;
-TWaveCab      waveCab;
-FILE          *fileWav       = NULL;
+// Variables
+static enum WaveFormat waveType  = WF_SINE;
+static unsigned int  sampleRate  = 44100;
+static unsigned int  bits        = 8;
+static double        volume      = 1.0;
+static int           waveInv     = 0;
+static unsigned int  dataSize    = 0;
+static TWaveCab      waveCab;
+static FILE          *fileWav    = NULL;
 
-/* Funções */
+// Public functions
 
 /**
  * Configura o tipo de onda e taxa de amostragem
  * to = Tipo de onda
  * ta = Taxa de Amostragem
  * bi = Bits (8 ou 16)
- * vol = Volume (de 0.0 à 1.0)
+ * vol = Volume (de 0.0 a 1.0)
  */
-void wavConfig(enum TipoOnda to, unsigned int ta, unsigned int bi, double vol, int inv) {
-	tipoOnda       = to;
-	taxaAmostragem = ta;
-	bits           = bi;
-	volume         = vol;
-	invertido      = inv;
+void wavConfig(enum WaveFormat to, unsigned int ta, unsigned int bi, double vol, int inv) {
+	waveType   = to;
+	sampleRate = ta;
+	bits       = bi;
+	volume     = vol;
+	waveInv    = inv;
 }
 
 /**
- * Gera silêncio no arquivo de saída
- * duracaoms = Duração em milisegundos
+ * Gera silÃ©ncio no arquivo de saÃ­da
+ * durationMs = DuraÃ§Ã£o em milisegundos
  * return 0 se OK, 1 se erro
  */
-int geraSilencio(int duracaoms) {
+int playSilence(int durationMs) {
 	int    total;
 	char   *buffer, v;
 	size_t t, s = 0;
@@ -55,7 +63,7 @@ int geraSilencio(int duracaoms) {
 	if (!fileWav)
 		return 1;
 
-	total = (taxaAmostragem * duracaoms) / 1000;
+	total = (sampleRate * durationMs) / 1000;
 	t = bits / 8;
 	buffer = (char *)malloc(total * t + t);
 	v = (bits == 8) ? 128 : 0;
@@ -64,19 +72,18 @@ int geraSilencio(int duracaoms) {
 	free(buffer);
 	if (s != (size_t)total)
 		return 1;
-	totalDados += total * t;
+	dataSize += total * t;
 	return 0;
 }
 
 /**
- * Gera um tom no arquivo de saída com o formato de onda configurado
- * frequencia = frequência do tom
- * duracaoms  = Duração em milisegundos
- * semiciclo  = valor entre 0 e 1 representando a relação de tamanho
- *             entre um semiciclo e outro
+ * Gera um tom no arquivo de saÃ­da com o formato de onda configurado
+ * frequency  = frequÃªncia do tom
+ * durationMs = DuraÃ§Ã£o em milisegundos
+ * dutyCycle  = Duty Cycle (float)
  * return 0 se OK, 1 se erro
  */
-int geraTom(int frequencia, int duracaoms, double semiciclo) {
+int playTone(int frequency, int durationMs, double dutyCycle) {
 	short       amp;
 	char        *buffer;
 	short		*buffer2;
@@ -91,9 +98,9 @@ int geraTom(int frequencia, int duracaoms, double semiciclo) {
 	const long double PI = acos((long double) -1);
 
 	/* Calcula tamanho do buffer e tamanho do semi-ciclo e ciclo completo */
-	cicloT = taxaAmostragem / frequencia;
-	ciclo1_2 = cicloT * semiciclo;
-	total = cicloT * duracaoms;
+	cicloT = sampleRate / frequency;
+	ciclo1_2 = cicloT * dutyCycle;
+	total = cicloT * durationMs;
 	t = bits / 8;
 	buffer = (char *)malloc(total * t + t);
 	buffer2 = (short *)buffer;
@@ -105,13 +112,13 @@ int geraTom(int frequencia, int duracaoms, double semiciclo) {
 	}
 
 	/* Calcula angulo */
-	switch (tipoOnda) {
+	switch (waveType) {
 
-	case TO_QUADRADA:
+	case WF_SQUARE:
 		ang = 0;
 		break;
 
-	case TO_SENOIDAL:
+	case WF_SINE:
 		ang = (2 * PI) / cicloT;
 		break;
 	}
@@ -119,29 +126,29 @@ int geraTom(int frequencia, int duracaoms, double semiciclo) {
 	/* Gera buffer wave */
 	c = 0;
 	while (c < total) {
-		switch (tipoOnda) {
+		switch (waveType) {
 
-		case TO_QUADRADA:
+		case WF_SQUARE:
 			for (i = 0; i < ciclo1_2; i++) {
 				if (bits == 8) {
-					buffer[c++] = (invertido) ? 128-amp : 128+amp;
+					buffer[c++] = (waveInv) ? 128-amp : 128+amp;
 				} else {
-					buffer2[c++] = (invertido) ? -amp : amp;
+					buffer2[c++] = (waveInv) ? -amp : amp;
 				}
 			}
 			for (     ; i < cicloT; i++) {
 				if (bits == 8) {
-					buffer[c++] = (invertido) ? 128+amp : 128-amp;
+					buffer[c++] = (waveInv) ? 128+amp : 128-amp;
 				} else {
-					buffer2[c++] = (invertido) ? amp : -amp;
+					buffer2[c++] = (waveInv) ? amp : -amp;
 				}
 			}
 			break;
 
-		case TO_SENOIDAL:
+		case WF_SINE:
 			for (i = 0; i < cicloT; i++) {
 				amps = (double)amp;
-				sincos = (invertido) ? -sin(ang * (double)i) : sin(ang * (double)i);
+				sincos = (waveInv) ? -sin(ang * (double)i) : sin(ang * (double)i);
 				if (bits == 8) {
 					buffer[c++] = (char)(amps * sincos + 128.0);
 				} else {
@@ -155,40 +162,41 @@ int geraTom(int frequencia, int duracaoms, double semiciclo) {
 	free(buffer);
 	if (s != (size_t)c)
 		return 1;
-	totalDados += c * t;
+	dataSize += c * t;
 	return 0;
 }
 
 /**
  * Cria um novo arquivo WAV
- * arq = nome do arquivo de saída
+ * filename = nome do arquivo de saÃ­da
  * return 0 se OK, 1 se erro
  */
-int criaWav(char *arq) {
+int makeWavFile(char *filename) {
 	size_t s = 0;
 
-	if (!(fileWav = fopen(arq, "wb")))
+	if (!(fileWav = fopen(filename, "wb")))
 		return 1;
 
 	memset(&waveCab, 0, sizeof(TWaveCab));
 
 	memcpy((char *)waveCab.groupID,  "RIFF", 4);
-	waveCab.groupLength    = 0;					// Não fornecido agora
+	waveCab.groupLength    = 0;					// Fill after
 	memcpy((char *)waveCab.typeID,   "WAVE", 4);
 	memcpy((char *)waveCab.formatID, "fmt ", 4);
 	waveCab.formatLength   = 16;
 	waveCab.wFormatTag     = WAVE_FORMAT_PCM;
 	waveCab.numChannels    = 1;
-	waveCab.samplesPerSec  = taxaAmostragem;
-	waveCab.bytesPerSec    = taxaAmostragem * 1 * (bits / 8);
+	waveCab.samplesPerSec  = sampleRate;
+	waveCab.bytesPerSec    = sampleRate * 1 * (bits / 8);
 	waveCab.nBlockAlign    = 1 * (bits / 8);
 	waveCab.bitsPerSample  = bits;
 	memcpy((char *)waveCab.dataID,   "data", 4);
-	waveCab.dataLength     = 0;					// Não fornecido agora
+	waveCab.dataLength     = 0;					// Fill after
 	s = fwrite(&waveCab, 1, sizeof(TWaveCab), fileWav);
-	if (s != sizeof(TWaveCab))
+	if (s != sizeof(TWaveCab)) {
 		return 1;
-	totalDados = 0;
+	}
+	dataSize = 0;
 	return 0;
 }
 
@@ -196,17 +204,19 @@ int criaWav(char *arq) {
  * Finaliza o arquivo WAV
  * return 0 se OK, 1 se erro
  */
-int finalizaWav() {
+int finishWaveFile() {
 	size_t s = 0;
-	// Fornecer dados faltantes do cabeçalho
-	waveCab.dataLength = totalDados;
-	waveCab.groupLength = totalDados + sizeof(TWaveCab) - 8;
-	if (fseek(fileWav, 0, SEEK_SET))
+	// Fornecer dados faltantes do cabeÃ§alho
+	waveCab.dataLength = dataSize;
+	waveCab.groupLength = dataSize + sizeof(TWaveCab) - 8;
+	if (fseek(fileWav, 0, SEEK_SET)) {
 		return 1;
+	}
 	s = fwrite(&waveCab, 1, sizeof(TWaveCab), fileWav);
 	fclose(fileWav);
-	if (s != sizeof(TWaveCab))
+	if (s != sizeof(TWaveCab)) {
 		return 1;
+	}
 	return 0;
 }
 

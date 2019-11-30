@@ -16,8 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FUNCTIONS_H_
-#define FUNCTIONS_H_
+#pragma once
 
 // Defines
 #define MAX(a,b)	(((a) > (b)) ? (a) : (b))
@@ -39,7 +38,5 @@ enum actions {
 // Prototipes
 char *withoutExt(const char *s);
 char *onlyPath(const char *s);
-//char *getExt(char *filename);
-char *loadBin(char *fileName, unsigned int *fileSize);
+char *loadBin(const char *fileName, unsigned int *fileSize);
 
-#endif /* FUNCTIONS_H_ */

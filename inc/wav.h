@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef WAV_H_
-#define WAV_H_
+#pragma once
 
 // Defines
 
-enum TipoOnda {
-	TO_QUADRADA = 0,
-	TO_SENOIDAL
+enum WaveFormat {
+	WF_SQUARE = 0,
+	WF_SINE
 };
 
+#pragma pack(push, 1)
 typedef struct SWaveCab {
 	unsigned char  groupID[4];		// RIFF
 	unsigned int   groupLength;
@@ -40,18 +40,17 @@ typedef struct SWaveCab {
 	unsigned short bitsPerSample;
 	unsigned char  dataID[4];
 	unsigned int   dataLength;
-}__attribute__((__packed__)) TWaveCab, *PTWaveCab;
+}/*__attribute__((__packed__))*/ TWaveCab, *PTWaveCab;
+#pragma pack(pop)
 
 #ifndef WAVE_FORMAT_PCM
-# define WAVE_FORMAT_PCM                 0x0001 /* Microsoft Corporation */
+# define WAVE_FORMAT_PCM 0x0001 /* Microsoft Corporation */
 #endif
 
 
 // Prototipes
-void wavConfig(enum TipoOnda to, unsigned int ta, unsigned int bi, double vol, int inv);
-int geraSilencio(int duracaoms);
-int geraTom(int frequencia, int duracaoms, double semiciclo);
-int criaWav(char *arq);
-int finalizaWav();
-
-#endif /* WAV_H_ */
+void wavConfig(enum WaveFormat to, unsigned int ta, unsigned int bi, double vol, int inv);
+int playSilence(int durationMs);
+int playTone(int frequency, int durationMs, double semicycle);
+int makeWavFile(char *filename);
+int finishWaveFile();

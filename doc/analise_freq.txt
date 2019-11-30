@@ -27,7 +27,7 @@ b/s		freq			X		us
 3000 = 32
 
 Teste semiciclo positivo gasta 9 ciclos, incrementa X
-Se fase mudou, só 8 ciclos
+Se fase mudou, sao 8 ciclos
 Depois gasta 21 a 22 ciclos
 Novo teste do semiciclo negativo, 9 ciclos incrementando X, 8 se mudou de fase
 gasta 26

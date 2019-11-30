@@ -16,8 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef TK2000_H_
-#define TK2000_H_
+#pragma once
 
 #include "functions.h"
 
@@ -27,41 +26,37 @@
 #define	TK2000_CABB 720
 
 // Structs
-struct TK2000_STKCab
-{
-	unsigned char nome[6];
-	unsigned char totalBlocos;
-	unsigned char blocoAtual;
-}__attribute__((__packed__));
+#pragma pack(push, 1)
+struct TK2000_STKCab {
+	unsigned char name[6];
+	unsigned char numberOfBlocks;
+	unsigned char actualBlock;
+}/*__attribute__((__packed__))*/;
 
-struct TK2000_STKEnd
-{
-	unsigned short endInicial;
-	unsigned short endFinal;
-}__attribute__((__packed__));
+struct TK2000_STKEnd {
+	unsigned short initialAddr;
+	unsigned short endAddr;
+}/*__attribute__((__packed__))*/;
 
-struct TK2000_SCh
-{
+struct TK2000_SCh {
 	unsigned char id[2];
-	unsigned short tam;
-}__attribute__((__packed__));
+	unsigned short size;
+}/*__attribute__((__packed__))*/;
 
-struct TK2000_SCRCab
-{
-	unsigned short endCarga;
+struct TK2000_SCRCab {
+	unsigned short loadAddr;
 	unsigned char opcode1;
 	unsigned char opcode2;
-	unsigned short endJump;
-}__attribute__((__packed__));
-
+	unsigned short jumpAddr;
+}/*__attribute__((__packed__))*/;
+#pragma pack(pop)
 
 // Prototipes
 void tk2000_samplesPerBit(int sampleRate, unsigned int spb);
 int tk2000_playBuffer(unsigned char *buffer, int len);
-int tk2000_playBinario(unsigned char *dados, int len, char *nome, int endInicial);
+int tk2000_playBinario(unsigned char *dados, int len, char *name, int initialAddr);
 int tk2000_playCR_byte(unsigned char c);
 int tk2000_playCR_buffer (char *dados, int len);
-int tk2000_playBinarioCR_autoload(char *nome);
-int tk2000_playBinarioCR_buffer(char *buffer, int len, int endCarga, enum actions acao, int endJump, int silence);
+int tk2000_playBinCR_autoload(char *name);
+int tk2000_playBinCR_buffer(char *buffer, int len, int loadAddr, enum actions action, int jumpAddr, int silence);
 
-#endif /* TK2000_H_ */

@@ -34,6 +34,9 @@ char *trim(const char *s) {
 }
 
 /*****************************************************************************/
+/** Make a new string without extension
+ * 
+ */
 char *withoutExt(const char *s) {
 	char *o = (char *)malloc(strlen(s) + 1);
 	strcpy(o, s);
@@ -66,32 +69,7 @@ char *onlyPath(const char *s) {
 }
 
 /*****************************************************************************/
-char *getExt(char *filename) {
-	char stack[256], *rval;
-	int i, sp = 0;
-
-	for (i = strlen(filename) - 1; i >= 0; i--) {
-		if(filename[i] == '.')
-			break;
-		stack[sp++] = filename[i];
-	}
-	stack[sp] = '\0';
-
-	if (sp == strlen(filename) || sp == 0)
-		return NULL;
-
-	if ((rval = (char *)malloc(sp * sizeof(char))) == NULL)
-		return NULL;
-
-	rval[sp] = '\0';
-	for (i = 0; i < sp + i; i++) {
-		rval[i] = stack[--sp];
-	}
-	return rval;
-}
-
-/*****************************************************************************/
-char *loadBin(char *fileName, unsigned int *fileSize) {
+char *loadBin(const char *fileName, unsigned int *fileSize) {
 	char *data = NULL;
 
 	FILE *fileBin = fopen(fileName, "rb");
