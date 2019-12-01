@@ -174,9 +174,9 @@ int playTone(int frequency, int durationMs, double dutyCycle) {
 int makeWavFile(char *filename) {
 	size_t s = 0;
 
-	if (!(fileWav = fopen(filename, "wb")))
+	if (!(fileWav = fopen(filename, "wb"))) {
 		return 1;
-
+	}
 	memset(&waveCab, 0, sizeof(TWaveCab));
 
 	memcpy((char *)waveCab.groupID,  "RIFF", 4);

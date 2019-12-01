@@ -60,7 +60,7 @@ static int			countEntries = 0;
 // Functions
 
 /*****************************************************************************/
-static int handler(void* user, const char* section, 
+static int handler(void* user, const char* section,
 			const char* name, const char* value) {
 	int					i, chargeAddr, callAddr, silence, ok;
 	char				c, *v1, *v2;
@@ -198,7 +198,7 @@ int main (int argc, char **argv) {
 				break;
 
 			case 'o':
-				outputfile = optarg;
+				outputfile = strdup(optarg);
 				break;
 
 			case 'r':
@@ -224,7 +224,7 @@ int main (int argc, char **argv) {
 			case 'w':
 				found = 0;
 				for (i = 0; i < wavesStrCount; i++) {
-					if (strcmpi(optarg, wavesStr[i]) == 0) {
+					if (strcasecmp(optarg, wavesStr[i]) == 0) {
 						found = 1;
 						break;
 					}
@@ -285,13 +285,13 @@ int main (int argc, char **argv) {
 		char *t = withoutExt(argv[optind]);
 		char *p = t;
 		p += strlen(iniPath);
-		outputfile = (char *)malloc(strlen(p) + 1);
+		outputfile = (char *)malloc(strlen(p) + 5);
 		strcpy(outputfile, p);
 		strcat(outputfile, ".wav");
 		free(t);
 	}
 	if (verbose) {
-		fprintf(stderr, 
+		fprintf(stderr,
 			"System: %s, Rate: %d, Bits: %d, SPB: %d, Inverse: %d, Wave format: %s, Volume: %.02f\n",
 		 	systemStr[machsys], sampleRate, bits, samplesPerBit, inverse, wavesStr[waveFormat], volume);
 	}
@@ -308,6 +308,7 @@ int main (int argc, char **argv) {
 	if (verbose) {
 		fprintf(stderr, "Creating output file '%s'.\n", outputfile);
 	}
+	printf("%s\n", filename); fflush(stdout);
 	if (makeWavFile(outputfile)) {
 		fprintf(stderr, "Error creating output file '%s'\n", outputfile);
 		return 1;

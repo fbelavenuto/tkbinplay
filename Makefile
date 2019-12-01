@@ -2,6 +2,7 @@
 
 CC = gcc
 LD = gcc
+CP = cp
 RM = rm -f
 MD = mkdir
 SREC = srec_cat
@@ -41,10 +42,13 @@ $(IDIR)/tk2000_cr.h: $(AOBJS)
 $(ODIR):
 	$(MD) $(ODIR)
 
-.PHONY: clean tests
+.PHONY: clean install tests
 
 clean:
 	$(RM) *.exe tkbinplay $(ODIR)/*
+
+install: tkbinplay
+	$(CP) $< /usr/local/bin
 
 tests: tkbinplay
 	make -C tests
