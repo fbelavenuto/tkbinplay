@@ -12,7 +12,8 @@
             "intelliSenseMode": "gcc-x64",
             "includePath": [
                 "inc",
-                "C:\\winbuilds\\mingw\\include"
+                "C:\\winbuilds\\mingw\\include",
+                "..\\libct2\\inc"
             ]
         }
     ],

@@ -18,13 +18,13 @@ IDIR = inc
 ALDIR = a2lib
 AIDIR = a2lib/inc
 
-CFLAGS = -g -Wall -I$(IDIR)
+CFLAGS = -g -Wall -I$(IDIR) -I../libct2/inc
 LDFLAGS = -lm
 ACFLAGS  = -t $(SYS) -O -I$(AIDIR)
 AAFLAGS  = -t $(SYS) -l $(ODIR)/$(*).lst -I$(AIDIR)
 ALDFLAGS = -C $(ALDIR)/_config
 
-UTILOBJ = main.o wav.o tk2000.o ini.o functions.o
+UTILOBJ = main.o tk2000.o ini.o functions.o
 OBJS = $(addprefix $(ODIR)/, $(UTILOBJ))
 
 ASMOBJ = cr.o
@@ -33,7 +33,7 @@ AOBJS = $(addprefix $(ODIR)/, $(ASMOBJ))
 all: $(ODIR) $(IDIR)/tk2000_cr.h tkbinplay
 
 tkbinplay: $(OBJS)
-	$(LD) $(LDFLAGS) $(OBJS) -o $@
+	$(LD) $(LDFLAGS) -o $@ $^ ../libct2/libct2.a
 
 $(IDIR)/tk2000_cr.h: $(AOBJS)
 	$(ALD) $(ALDFLAGS) -o $(ODIR)/cr#060300 $^
@@ -45,7 +45,7 @@ $(ODIR):
 .PHONY: clean install tests
 
 clean:
-	$(RM) *.exe tkbinplay $(ODIR)/*
+	$(RM) *.exe tkbinplay $(ODIR)/* tests/*.wav *.wav
 
 install: tkbinplay
 	$(CP) $< /usr/local/bin

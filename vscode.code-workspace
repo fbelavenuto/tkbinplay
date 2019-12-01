@@ -48,7 +48,8 @@
 			"tuple": "c",
 			"type_traits": "c",
 			"utility": "c",
-			"typeinfo": "c"
+			"typeinfo": "c",
+			"wav.h": "c"
 		}
 	}
 }
