@@ -32,8 +32,9 @@ struct TK2000_SCRCab {
 #pragma pack(pop)
 
 // Prototipes
-void tk2000_samplesPerBit(int sampleRate, unsigned int spb);
-int tk2000_playCR_byte(unsigned char c);
-int tk2000_playCR_buffer (char *dados, int len);
-int tk2000_playBinCR_autoload(char *name);
-int tk2000_playBinCR_buffer(char *buffer, int len, int loadAddr, enum actions action, int jumpAddr, int silence);
+void tk2kSetSpb(int sampleRate, unsigned int spb);
+int tk2kPlayBinAl(char *name);
+int tk2kPlayCrByte(unsigned char c);
+int tk2kPlayCrBuffer (char *dados, int len);
+int tk2kPlayBinCrBuffer(char *buffer, int len, int loadAddr, 
+	enum actions action, int jumpAddr, int silence);

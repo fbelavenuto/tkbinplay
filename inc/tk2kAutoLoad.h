@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-unsigned char tk2000_autoload[40] = {
+unsigned char tk2kAutoLoad[40] = {
 		0x50, 0x00,
 		0x0F, 0xFD, 0x00, 0x00,
 		0x3C, 0x00,

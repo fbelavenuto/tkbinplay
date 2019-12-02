@@ -23,8 +23,8 @@
 #include "functions.h"
 #include "wav.h"
 #include "tk2000.h"
-#include "tk2000_ar.h"
-#include "tk2000_cr.h"
+#include "tk2kAutoLoad.h"
+#include "tk2kCr.h"
 
 // Defines
 #define INT_DEBUG 0
@@ -37,10 +37,8 @@ static int tk2000_crXval[5] = { 5, 10, 15, 20, 26 };				// spb=4 sr=44100
 
 // Public functions
 
-/*****************************************************************************
- * Configura samples per bit
- */
-void tk2000_samplesPerBit(int sampleRate, unsigned int spb) {
+/*****************************************************************************/
+void tk2kSetSpb(int sampleRate, unsigned int spb) {
 	int i, x = spb;
 	double f;
 	for (i = 0; i < 5; i++) {
@@ -56,54 +54,22 @@ void tk2000_samplesPerBit(int sampleRate, unsigned int spb) {
 }
 
 /*****************************************************************************/
-int tk2000_playCR_byte(unsigned char c) {
-	// Manda 2 bits por vez
-	unsigned char mask = 0xC0;		// MSB primeiro
-	int z, r = 0;
-
-	for (z = 0; z < 4; z++) {
-		unsigned b = (c & mask) >> (6-z*2);
-		int f = tk2000_crfreq[b];
-		r |= playTone(f, 1, 0.5);
-		mask >>= 2;
-	}
-	return r;
-}
-
-/*****************************************************************************/
-int tk2000_playCR_buffer (char *data, int len) {
-	unsigned char cs = 0;
-	int i, r = 0;;
-
-	r |= playTone(5000, 500, 0.5);		/* Piloto */
-	r |= playTone(10000, 2, 0.5);			/* Sync */
-
-	for (i = 0; i < len; i++) {
-		unsigned char c = data[i];
-		r |= tk2000_playCR_byte(c);
-		cs ^= c;
-	}
-	r |= tk2000_playCR_byte(cs);
-	r |= playTone(3500, 2, 0.5);			/* Final */
-	return r;
-}
-
-/*****************************************************************************/
-int tk2000_playBinCR_autoload(char *name) {
+int tk2kPlayBinAl(char *name) {
 	int           r = 0, i, j, k, lk, pb, bufsize;
 	unsigned char c = 0xFC;
 	unsigned char *buffer = NULL;
 
-	r |= tk2kPlayBin((char *)tk2000_autoload, 
-			sizeof(tk2000_autoload), name, 0x0036);
+	r |= tk2kPlayBin((char *)tk2kAutoLoad, 
+			sizeof(tk2kAutoLoad), name, 0x0036);
 	
-	bufsize = sizeof(tk2000_cr) + tk2000_crXval[4] + 10;
+	bufsize = sizeof(tk2kCr) + tk2000_crXval[4] + 10;
 	buffer = (unsigned char *)malloc(bufsize + 1);
-	memcpy(buffer, tk2000_cr, sizeof(tk2000_cr));
-	pb = sizeof(tk2000_cr);
+	memcpy(buffer, tk2kCr, sizeof(tk2kCr));
+	pb = sizeof(tk2kCr);
 	lk = 0;
 	for (i=0; i < 4; i++) {
-		k = (double)(((double)tk2000_crXval[i+1] - (double)tk2000_crXval[i]) + 0.5) / 2.0;
+		k = (double)(((double)tk2000_crXval[i+1] - 
+			(double)tk2000_crXval[i]) + 0.5) / 2.0;
 		k += tk2000_crXval[i];
 		for (j=lk; j <= k; j++) {
 			buffer[pb++] = c;
@@ -137,7 +103,40 @@ int tk2000_playBinCR_autoload(char *name) {
 }
 
 /*****************************************************************************/
-int tk2000_playBinCR_buffer(char *buffer, int len, int loadAddr, 
+int tk2kPlayCrByte(unsigned char c) {
+	// Manda 2 bits por vez
+	unsigned char mask = 0xC0;		// MSB primeiro
+	int z, r = 0;
+
+	for (z = 0; z < 4; z++) {
+		unsigned b = (c & mask) >> (6-z*2);
+		int f = tk2000_crfreq[b];
+		r |= playTone(f, 1, 0.5);
+		mask >>= 2;
+	}
+	return r;
+}
+
+/*****************************************************************************/
+int tk2kPlayCrBuffer (char *data, int len) {
+	unsigned char cs = 0;
+	int i, r = 0;;
+
+	r |= playTone(5000, 500, 0.5);			/* Pilot */
+	r |= playTone(10000, 2, 0.5);			/* Sync */
+
+	for (i = 0; i < len; i++) {
+		unsigned char c = data[i];
+		r |= tk2kPlayCrByte(c);
+		cs ^= c;
+	}
+	r |= tk2kPlayCrByte(cs);
+	r |= playTone(3500, 2, 0.5);			/* End */
+	return r;
+}
+
+/*****************************************************************************/
+int tk2kPlayBinCrBuffer(char *buffer, int len, int loadAddr, 
 		enum actions action, int jumpAddr, int silence) {
 	int r = 0;
 	struct TK2000_SCRCab cab;
@@ -177,9 +176,9 @@ int tk2000_playBinCR_buffer(char *buffer, int len, int loadAddr,
 			break;
 
 	}
-	r |= tk2000_playCR_buffer((char *)&cab, sizeof(struct TK2000_SCRCab));
+	r |= tk2kPlayCrBuffer((char *)&cab, sizeof(struct TK2000_SCRCab));
 	if (buffer) {
-		r |= tk2000_playCR_buffer(buffer, len);
+		r |= tk2kPlayCrBuffer(buffer, len);
 	}
 	r |= playSilence(silence);
 

@@ -1,5 +1,5 @@
 /* http://srecord.sourceforge.net/ */
-const unsigned char tk2000_cr[] =
+const unsigned char tk2kCr[] =
 {
 0x4C, 0x9B, 0x03, 0x8D, 0x57, 0x03, 0x8C, 0x58, 0x03, 0xA0, 0x00, 0x84,
 0xF2, 0xA9, 0xFF, 0xA2, 0x00, 0xE8, 0x2C, 0x10, 0xC0, 0x10, 0xFA, 0xE8,
@@ -18,12 +18,12 @@ const unsigned char tk2000_cr[] =
 0xC9, 0x00, 0xD0, 0x04, 0xC0, 0x00, 0xF0, 0x03, 0x20, 0x03, 0x03, 0xA9,
 0xEA, 0x8D, 0x9A, 0x03, 0x4C, 0x96, 0x03,
 };
-const unsigned long tk2000_cr_termination = 0x00000000;
-const unsigned long tk2000_cr_start       = 0x00000000;
-const unsigned long tk2000_cr_finish      = 0x000000BB;
-const unsigned long tk2000_cr_length      = 0x000000BB;
+const unsigned long tk2kCr_termination = 0x00000000;
+const unsigned long tk2kCr_start       = 0x00000000;
+const unsigned long tk2kCr_finish      = 0x000000BB;
+const unsigned long tk2kCr_length      = 0x000000BB;
 
-#define TK2000_CR_TERMINATION 0x00000000
-#define TK2000_CR_START       0x00000000
-#define TK2000_CR_FINISH      0x000000BB
-#define TK2000_CR_LENGTH      0x000000BB
+#define TK2KCR_TERMINATION 0x00000000
+#define TK2KCR_START       0x00000000
+#define TK2KCR_FINISH      0x000000BB
+#define TK2KCR_LENGTH      0x000000BB

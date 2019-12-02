@@ -143,8 +143,8 @@ inicio:
 header:
 	.word	$0000				; Ponteiro do bloco que será carregado pelo código
 acao:
-	nop							; Esse opcode será carregado pelo código, mudará conforme escolha do usuário
-	jmp	(header)				; Esses opcodes serão carregados pelo código
+	nop							; Esse opcode será carregado pelo código, reservado
+	jmp	(header)				; Esses opcodes serão carregados pelo código, mudará conforme escolha do usuário
 cs:
 	nop							; Receberá último byte para cálculo do checksum
 carga_bloco:

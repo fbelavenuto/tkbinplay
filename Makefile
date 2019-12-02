@@ -37,7 +37,7 @@ tkbinplay: $(OBJS)
 
 $(IDIR)/tk2000_cr.h: $(AOBJS)
 	$(ALD) $(ALDFLAGS) -o $(ODIR)/cr#060300 $^
-	$(SREC) $(ODIR)/cr#060300 -bin -o $(IDIR)/tk2000_cr.h -C-Array tk2000_cr
+	$(SREC) $(ODIR)/cr#060300 -bin -o $(IDIR)/tk2kCr.h -C-Array tk2kCr
 
 $(ODIR):
 	$(MD) $(ODIR)

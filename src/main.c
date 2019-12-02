@@ -295,7 +295,7 @@ int main (int argc, char **argv) {
 			"System: %s, Rate: %d, Bits: %d, SPB: %d, Inverse: %d, Wave format: %s, Volume: %.02f\n",
 		 	systemStr[machsys], sampleRate, bits, samplesPerBit, inverse, wavesStr[waveFormat], volume);
 	}
-	tk2000_samplesPerBit(sampleRate, samplesPerBit);
+	tk2kSetSpb(sampleRate, samplesPerBit);
 	wavConfig(waveFormat, sampleRate, bits, volume, inverse);
 
 	if (verbose) {
@@ -313,7 +313,7 @@ int main (int argc, char **argv) {
 		return 1;
 	}
 	if (autoload == 1) {
-		tk2000_playBinCR_autoload(nameCas);
+		tk2kPlayBinAl(nameCas);
 	}
 
 	for (i = 0; i < countEntries; i++) {
@@ -341,7 +341,7 @@ int main (int argc, char **argv) {
 			}
 			fprintf(stderr, "silence=%d ms\n", entries[i].silence);
 		}
-		tk2000_playBinCR_buffer(buffer, filesize, entries[i].chargeAddr, entries[i].action, entries[i].callAddr, entries[i].silence);
+		tk2kPlayBinCrBuffer(buffer, filesize, entries[i].chargeAddr, entries[i].action, entries[i].callAddr, entries[i].silence);
 		if (buffer) {
 			free(buffer);
 		}
