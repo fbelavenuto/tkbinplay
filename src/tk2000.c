@@ -94,7 +94,7 @@ int tk2000_playBinCR_autoload(char *name) {
 	unsigned char c = 0xFC;
 	unsigned char *buffer = NULL;
 
-	r |= tk2kPlayBin((unsigned char *)tk2000_autoload, 
+	r |= tk2kPlayBin((char *)tk2000_autoload, 
 			sizeof(tk2000_autoload), name, 0x0036);
 	
 	bufsize = sizeof(tk2000_cr) + tk2000_crXval[4] + 10;
@@ -132,7 +132,7 @@ int tk2000_playBinCR_autoload(char *name) {
 	fprintf(stderr, "\n");
 #endif
 	
-	r |= tk2kPlayBin(buffer, bufsize, name, 0x0300);
+	r |= tk2kPlayBin((char *)buffer, bufsize, name, 0x0300);
 	return r;
 }
 
