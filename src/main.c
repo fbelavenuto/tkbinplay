@@ -308,7 +308,7 @@ int main (int argc, char **argv) {
 	if (verbose) {
 		fprintf(stderr, "Creating output file '%s'.\n", outputfile);
 	}
-	if (createWaveFile(outputfile)) {
+	if (createWaveFile(outputfile) == 0) {
 		fprintf(stderr, "Error creating output file '%s'\n", outputfile);
 		return 1;
 	}
