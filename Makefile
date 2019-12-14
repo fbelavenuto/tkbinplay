@@ -15,8 +15,8 @@ ALD=ld65
 SDIR = src
 ODIR = obj
 IDIR = inc
-ALDIR = a2lib
-AIDIR = a2lib/inc
+ALDIR = ../apple2lib
+AIDIR = $(ALDIR)/inc
 
 CFLAGS = -g -Wall -I$(IDIR) -I../libct2/inc
 LDFLAGS = -lm
