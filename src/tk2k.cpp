@@ -22,39 +22,24 @@
 #include <unistd.h>
 #include "functions.h"
 #include "wav.h"
-#include "tk2000.h"
+#include "tk2k.h"
 #include "tk2kAutoLoad.h"
 #include "tk2kCr.h"
 
-// Defines
-#define INT_DEBUG 0
+// Structs
+#pragma pack(push, 1)
+struct TK2000_SCRCab {
+	unsigned short loadAddr;
+	unsigned char opcode1;
+	unsigned char opcode2;
+	unsigned short jumpAddr;
+};
+#pragma pack(pop)
 
-// Variables
-static int tk2000_crfreq[5] = { 11025, 7350, 5512, 4410, 3675 };	// spb=4 sr=44100
-static int tk2000_crXval[5] = { 5, 10, 15, 20, 26 };				// spb=4 sr=44100
-
-// Private functions
-
-// Public functions
-
-/*****************************************************************************/
-void tk2kSetSpb(int sampleRate, unsigned int spb) {
-	int i, x = spb;
-	double f;
-	for (i = 0; i < 5; i++) {
-		tk2000_crfreq[i] = sampleRate / x;
-		x += 2;
-		// =(us-56)/9+2
-		f = ((1.0 / (double)(tk2000_crfreq[i])) * 1000000.0 - 56.0) / 8.6 + 2.0;
-		tk2000_crXval[i] = f;
-#if INT_DEBUG == 1
-		fprintf(stderr, "%d\t%d\t%02X\n", tk2000_crfreq[i], tk2000_crXval[i], tk2000_crXval[i]);
-#endif
-	}
-}
+// Public class functions
 
 /*****************************************************************************/
-int tk2kPlayBinAl(char *name) {
+bool tk2k::genAutoLoad(char *name) {
 	int           r = 0, i, j, k, lk, pb, bufsize;
 	unsigned char c = 0xFC;
 	unsigned char *buffer = NULL;
@@ -62,63 +47,46 @@ int tk2kPlayBinAl(char *name) {
 	r |= tk2kPlayBin((char *)tk2kAutoLoad, 
 			sizeof(tk2kAutoLoad), name, 0x0036);
 	
-	bufsize = sizeof(tk2kCr) + tk2000_crXval[4] + 10;
+	bufsize = sizeof(tk2kCr) + getXval(4) + 10;
 	buffer = (unsigned char *)malloc(bufsize + 1);
 	memcpy(buffer, tk2kCr, sizeof(tk2kCr));
 	pb = sizeof(tk2kCr);
 	lk = 0;
 	for (i=0; i < 4; i++) {
-		k = (double)(((double)tk2000_crXval[i+1] - 
-			(double)tk2000_crXval[i]) + 0.5) / 2.0;
-		k += tk2000_crXval[i];
+		k = (double)(((double)getXval(i+1) - 
+			(double)getXval(i)) + 0.5) / 2.0;
+		k += getXval(i);
 		for (j=lk; j <= k; j++) {
 			buffer[pb++] = c;
-#if DEBUG == 1
-			if (j == tk2000_crXval[i]) {
-				fprintf(stderr, "[%02X],", c);
-			} else {
-				fprintf(stderr, "%02X,", c);
-			}
-#endif
 		}
 		lk = k+1;
 		++c;
-#if DEBUG == 1
-		fprintf(stderr, "\n");
-#endif
 	}
-	k = tk2000_crXval[4] + 10;
+	k = getXval(4) + 10;
 	for (j=lk; j < k; j++) {
 		buffer[pb++] = c;
-#if DEBUG == 1
-		fprintf(stderr, "%02X,", c);
-#endif
-	}
-#if DEBUG == 1
-	fprintf(stderr, "\n");
-#endif
-	
+	}	
 	r |= tk2kPlayBin((char *)buffer, bufsize, name, 0x0300);
-	return r;
+	return r != 0;
 }
 
 /*****************************************************************************/
-int tk2kPlayCrByte(unsigned char c) {
+bool tk2k::playCrByte(unsigned char c) {
 	// Manda 2 bits por vez
 	unsigned char mask = 0xC0;		// MSB primeiro
 	int z, r = 0;
 
 	for (z = 0; z < 4; z++) {
 		unsigned b = (c & mask) >> (6-z*2);
-		int f = tk2000_crfreq[b];
+		int f = getFreq(b);
 		r |= playTone(f, 1, 0.5);
 		mask >>= 2;
 	}
-	return r;
+	return r != 0;
 }
 
 /*****************************************************************************/
-int tk2kPlayCrBuffer (char *data, int len) {
+bool tk2k::playCrBuffer(char *data, int len) {
 	unsigned char cs = 0;
 	int i, r = 0;;
 
@@ -127,16 +95,16 @@ int tk2kPlayCrBuffer (char *data, int len) {
 
 	for (i = 0; i < len; i++) {
 		unsigned char c = data[i];
-		r |= tk2kPlayCrByte(c);
+		r |= playCrByte(c);
 		cs ^= c;
 	}
-	r |= tk2kPlayCrByte(cs);
+	r |= playCrByte(cs);
 	r |= playTone(3500, 2, 0.5);			/* End */
-	return r;
+	return r != 0;
 }
 
 /*****************************************************************************/
-int tk2kPlayBinCrBuffer(char *buffer, int len, int loadAddr, 
+bool tk2k::playBinCrBuffer(char *buffer, int len, int loadAddr, 
 		enum actions action, int jumpAddr, int silence) {
 	int r = 0;
 	struct TK2000_SCRCab cab;
@@ -176,14 +144,11 @@ int tk2kPlayBinCrBuffer(char *buffer, int len, int loadAddr,
 			break;
 
 	}
-	r |= tk2kPlayCrBuffer((char *)&cab, sizeof(struct TK2000_SCRCab));
+	r |= playCrBuffer((char *)&cab, sizeof(struct TK2000_SCRCab));
 	if (buffer) {
-		r |= tk2kPlayCrBuffer(buffer, len);
+		r |= playCrBuffer(buffer, len);
 	}
 	r |= playSilence(silence);
 
-	return r;
+	return r != 0;
 }
-
-
-/**************************************************************************/

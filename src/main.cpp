@@ -24,13 +24,16 @@
 #include "functions.h"
 #include "ini.h"
 #include "wav.h"
-#include "tk2000.h"
+#include "machine.h"
+#include "tk2k.h"
+#include "apple2.h"
 
 // Defines
 
 // Enums
 enum systems {
 	SYSTEM_TK2000 = 0,
+	SYSTEM_A2
 };
 
 // Structs
@@ -43,7 +46,7 @@ struct entry {
 };
 
 // Constants
-static const char *systemStr[] = {"TK2000"};
+static const char *systemStr[] = {"TK2000", "Apple2"};
 static const unsigned int systemStrCount = sizeof(systemStr) / sizeof(const char *);
 static const char *wavesStr[] = {"Square", "Sine"};
 static const unsigned int wavesStrCount =  sizeof(wavesStr) / sizeof(const char *);
@@ -55,7 +58,7 @@ static enum systems machsys = SYSTEM_TK2000;
 static char			nameCas[32];
 static struct entry	*entries = NULL;
 static int			countEntries = 0;
-
+machine *machClass = NULL;
 
 // Functions
 
@@ -69,16 +72,16 @@ static int handler(void* user, const char* section,
 	enum actions		action;
 
 	if (MATCH("general", "system")) {
-		for (i = 0; i < systemStrCount; i++) {
+		for (i = 0; i < (int)systemStrCount; i++) {
 			if (strcmp(value, systemStr[i]) == 0) {
-				machsys = i;
+				machsys = (systems)i;
 				return 1;
 			}
 		}
 		return 0;
 	} else if (MATCH("general", "name")) {
 		// Name presented in the machine
-		for (i = 0; i < MIN(strlen(value), sizeof(name)); i++) {
+		for (i = 0; i < MIN((int)strlen(value), (int)sizeof(name)); i++) {
 			c = value[i];
 			if (c >= 'a' && c <= 'z') {
 				c -= 32;
@@ -115,9 +118,9 @@ static int handler(void* user, const char* section,
 		memset(tmp, 0, MAX_PATH);
 		memcpy(tmp, v2, v1-v2);
 		ok = 0;
-		for (i = 0; i < actionStrCount; i++) {
+		for (i = 0; i < (int)actionStrCount; i++) {
 			if (strcmp(tmp, actionsStr[i]) == 0) {
-				action = i;
+				action = (actions)i;
 				ok = 1;
 				break;
 			}
@@ -140,7 +143,7 @@ static int handler(void* user, const char* section,
 		strcpy(tmp, v2);
 		sscanf(tmp, "%d", &silence);		// silence
 
-		if ((tmp2 = realloc(entries, (countEntries+1) * sizeof(struct entry))) == NULL) {
+		if ((tmp2 = (entry *)realloc(entries, (countEntries+1) * sizeof(struct entry))) == NULL) {
 			fprintf(stderr, "Error: no enough memory to add entry #%d\n", countEntries+1);
 			abort();
 		}
@@ -223,7 +226,7 @@ int main (int argc, char **argv) {
 
 			case 'w':
 				found = 0;
-				for (i = 0; i < wavesStrCount; i++) {
+				for (i = 0; i < (int)wavesStrCount; i++) {
 					if (strcasecmp(optarg, wavesStr[i]) == 0) {
 						found = 1;
 						break;
@@ -233,7 +236,7 @@ int main (int argc, char **argv) {
 					usage();
 					return 1;
 				}
-				waveFormat = i;
+				waveFormat = (WaveFormat)i;
 				break;
 
 			case 'p':
@@ -295,7 +298,19 @@ int main (int argc, char **argv) {
 			"System: %s, Rate: %d, Bits: %d, SPB: %d, Inverse: %d, Wave format: %s, Volume: %.02f\n",
 		 	systemStr[machsys], sampleRate, bits, samplesPerBit, inverse, wavesStr[waveFormat], volume);
 	}
-	tk2kSetSpb(sampleRate, samplesPerBit);
+	// Alloc class
+	switch(machsys) {
+		case SYSTEM_TK2000:
+			machClass = new tk2k(sampleRate, samplesPerBit);
+			break;
+
+		case SYSTEM_A2:
+			machClass = new apple2(sampleRate, samplesPerBit);
+			break;
+
+		default:
+			throw "System machine error!\n";
+	}
 	wavConfig(waveFormat, sampleRate, bits, volume, inverse);
 
 	if (verbose) {
@@ -313,7 +328,7 @@ int main (int argc, char **argv) {
 		return 1;
 	}
 	if (autoload == 1) {
-		tk2kPlayBinAl(nameCas);
+		machClass->genAutoLoad(nameCas);
 	}
 
 	for (i = 0; i < countEntries; i++) {
@@ -341,7 +356,7 @@ int main (int argc, char **argv) {
 			}
 			fprintf(stderr, "silence=%d ms\n", entries[i].silence);
 		}
-		tk2kPlayBinCrBuffer(buffer, filesize, entries[i].chargeAddr, entries[i].action, entries[i].callAddr, entries[i].silence);
+		machClass->playBinCrBuffer(buffer, filesize, entries[i].chargeAddr, entries[i].action, entries[i].callAddr, entries[i].silence);
 		if (buffer) {
 			free(buffer);
 		}

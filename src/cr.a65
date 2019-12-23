@@ -29,8 +29,6 @@
 DADO		:= $F0
 CHECKSUM	:= $F2
 
-TAPEIN		:= $C010
-
 	.org	$300
 
 	jmp	carga_bloco
@@ -139,7 +137,7 @@ inicio:
 	rts
 @erro:
 	jsr	MON_PRERR				; Erro de Checksum, sair avisando
-	jmp	$C72B
+	jmp	MON_GOWARM				; Return to BASIC
 header:
 	.word	$0000				; Ponteiro do bloco que será carregado pelo código
 acao:

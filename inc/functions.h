@@ -26,15 +26,6 @@
 # define MAX_PATH 260
 #endif
 
-// Enums
-enum actions {
-	ACTION_JUMP = 0,
-	ACTION_CALL,
-	ACTION_NOTHING,
-	ACTION_RETURN,
-	ACTION_CUSTOM
-};
-
 // Prototipes
 char *withoutExt(const char *s);
 char *onlyPath(const char *s);

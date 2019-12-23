@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/tkbinplay.exe",
             "args": [
-                "-d", "tests\\bubbles.ini"
+                "-d", "tests\\viper.ini"
             ],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",

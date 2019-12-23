@@ -1,0 +1,58 @@
+; tkbinplay - Fast cassete load for TK micro
+;
+; Copyright (C) 2014-2020  Fabio Belavenuto
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+; This code is based on autoload from c2t project:
+; https://github.com/datajerk/c2t
+
+	.include "sys.def"
+	.include "hw.def"
+
+    .org    $801
+
+;basic program "CALL 2060"
+;end of code[LSB,MSB] = $0B,$08
+;line #[LSB,MSG] = $01,$00
+;CALL[1] = $8C
+;vec[4] = $32,$30,$36,$30 (2060 in ASCII)
+;end[2] = $00,$00
+    .byte   $0B,$08,$01,$00,$8C,$32,$30,$36,$30,$00,$00
+start:
+	lda	#<@loadm
+	sta FREE_D7
+	lda	#>@loadm
+	sta	FREE_D7+1
+	ldy	#0
+	lda	(FREE_D7),y		; load initial char
+:
+    ora #$80
+	jsr	MON_COUT
+	iny
+	lda	(FREE_D7),y
+	bne	:-
+	ldx	#$EF
+:
+	lda crCode,x
+    sta $300,x
+	dex
+	cpx	#$FF
+	bne :-
+	jmp $300
+
+@loadm:
+	.res	30
+
+crCode:

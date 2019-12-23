@@ -18,4 +18,32 @@
 
 #pragma once
 
-#define VERSION "1.1.0"
+// Enums
+enum actions {
+	ACTION_JUMP = 0,
+	ACTION_CALL,
+	ACTION_NOTHING,
+	ACTION_RETURN,
+	ACTION_CUSTOM
+};
+
+// Class
+class machine {
+    private:
+        int crFreqs[5];
+        int crXvals[5];
+
+    protected:
+        machine(unsigned int sampleRate, unsigned int spb);
+        ~machine();
+
+    public:
+        int getFreq(int i);
+        int getXval(int i);
+        virtual bool genAutoLoad(char *name) = 0;
+        virtual bool playCrByte(unsigned char c) = 0;
+        virtual bool playCrBuffer (char *dados, int len) = 0;
+        virtual bool playBinCrBuffer(char *buffer, int len, int loadAddr, 
+	        enum actions action, int jumpAddr, int silence) = 0;
+
+};

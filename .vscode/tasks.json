@@ -2,9 +2,9 @@
     "version": "2.0.0",
     "tasks": [
       {
-        "label": "build with Makefile",
+        "label": "Build all",
         "type": "shell",
-        "command": "mingw32-make.exe",
+        "command": "make",
         "group": {
           "kind": "build",
           "isDefault": true
@@ -13,13 +13,13 @@
       {
         "label": "Clean",
         "type": "shell",
-        "command": "mingw32-make.exe clean",
+        "command": "make clean",
         "problemMatcher": []
       },
       {
-        "label": "build tests",
+        "label": "Build tests",
         "type": "shell",
-        "command": "mingw32-make tests",
+        "command": "make tests",
         "group": {
           "kind": "test",
           "isDefault": true

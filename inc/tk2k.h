@@ -18,23 +18,19 @@
 
 #pragma once
 
-#include "ct2.h"
-#include "functions.h"
+#include "machine.h"
 
-// Structs
-#pragma pack(push, 1)
-struct TK2000_SCRCab {
-	unsigned short loadAddr;
-	unsigned char opcode1;
-	unsigned char opcode2;
-	unsigned short jumpAddr;
+// Class
+class tk2k : public machine {
+    private:
+
+    public:
+        tk2k(unsigned int sampleRate, unsigned int spb) :
+            machine(sampleRate, spb) {};
+        bool genAutoLoad(char *name);
+        bool playCrByte(unsigned char c);
+        bool playCrBuffer (char *dados, int len);
+        bool playBinCrBuffer(char *buffer, int len, int loadAddr, 
+	        enum actions action, int jumpAddr, int silence);
+
 };
-#pragma pack(pop)
-
-// Prototipes
-void tk2kSetSpb(int sampleRate, unsigned int spb);
-int tk2kPlayBinAl(char *name);
-int tk2kPlayCrByte(unsigned char c);
-int tk2kPlayCrBuffer (char *dados, int len);
-int tk2kPlayBinCrBuffer(char *buffer, int len, int loadAddr, 
-	enum actions action, int jumpAddr, int silence);

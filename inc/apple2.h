@@ -18,4 +18,19 @@
 
 #pragma once
 
-#define VERSION "1.1.0"
+#include "machine.h"
+
+// Class
+class apple2 : public machine {
+    private:
+
+    public:
+        apple2(unsigned int sampleRate, unsigned int spb) :
+            machine(sampleRate, spb) {};
+        bool genAutoLoad(char *name);
+        bool playCrByte(unsigned char c);
+        bool playCrBuffer (char *dados, int len);
+        bool playBinCrBuffer(char *buffer, int len, int loadAddr, 
+	        enum actions action, int jumpAddr, int silence);
+
+};
