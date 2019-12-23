@@ -98,6 +98,7 @@ bool apple2::genAutoLoad(char *name) {
 	memset(buffer, 0, bufSize);
     memcpy(buffer, A2AutoLoad, A2AUTOLOAD_LENGTH);
 	memcpy(buffer + A2AUTOLOAD_LENGTH, A2Cr, A2CR_LENGTH);
+	name[30] = 0;
     sprintf((char *)&buffer[A2AUTOLOAD_LENGTH - 30],
 		"LOADING %s", name);
 	pb = A2AUTOLOAD_LENGTH + A2CR_LENGTH;

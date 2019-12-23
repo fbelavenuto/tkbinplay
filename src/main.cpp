@@ -81,7 +81,7 @@ static int handler(void* user, const char* section,
 		return 0;
 	} else if (MATCH("general", "name")) {
 		// Name presented in the machine
-		for (i = 0; i < MIN((int)strlen(value), (int)sizeof(name)); i++) {
+		for (i = 0; i < MIN((int)strlen(value), (int)sizeof(nameCas)); i++) {
 			c = value[i];
 			if (c >= 'a' && c <= 'z') {
 				c -= 32;

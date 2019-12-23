@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/tkbinplay.exe",
             "args": [
-                "-d", "tests\\viper.ini"
+                "-d", "tests\\agent_usa.ini"
             ],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
